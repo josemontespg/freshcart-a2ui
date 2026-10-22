@@ -1,9 +1,319 @@
 import {
   A2UI_BASIC_CATALOG_ID,
+  FRESHCART_GROCERY_CATALOG_ID,
+  type A2UICatalogFunctionMetadata,
   type A2UIDataBinding,
   type A2UIFunctionCall,
   type A2UIValidationResult,
 } from '../types/a2ui-v1';
+
+export interface ClientLiveBridgeSnapshot {
+  cartItemCount: number;
+  cartSubtotal: number;
+  activeStoreId: string;
+  activeStoreName: string;
+  deliveryEtaMinutes: number;
+  cartItemNames: string[];
+}
+
+const DEFAULT_CLIENT_LIVE_BRIDGE: ClientLiveBridgeSnapshot = {
+  cartItemCount: 3,
+  cartSubtotal: 34.47,
+  activeStoreId: 'green-leaf-market',
+  activeStoreName: 'GreenLeaf Organic Market',
+  deliveryEtaMinutes: 35,
+  cartItemNames: [
+    'Wild Alaskan Sockeye Salmon Fillet',
+    'Organic Hass Avocados (4 ct Bag)',
+    'Cold-Pressed Extra Virgin Olive Oil',
+  ],
+};
+
+let currentClientLiveBridge: ClientLiveBridgeSnapshot = {
+  ...DEFAULT_CLIENT_LIVE_BRIDGE,
+};
+
+export function setClientLiveBridgeSnapshot(
+  snapshot: Partial<ClientLiveBridgeSnapshot>
+): void {
+  currentClientLiveBridge = {
+    ...currentClientLiveBridge,
+    ...snapshot,
+  };
+}
+
+export function getClientLiveBridgeSnapshot(): ClientLiveBridgeSnapshot {
+  return currentClientLiveBridge;
+}
+
+/**
+ * Authoritative Registry of A2UI v1.0 Basic Catalog + FreshCart Grocery Catalog
+ * Client-Side and Server-Side Functions (`catalog_definition.json` schema).
+ */
+export const A2UI_FUNCTION_CATALOG_REGISTRY: Record<
+  string,
+  A2UICatalogFunctionMetadata
+> = {
+  '@index': {
+    name: '@index',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'number',
+    allowedCallers: 'rendererOnly',
+    requiresUserActivation: false,
+    description:
+      'Returns the 0-based collection index (plus optional offset) within a ChildList template scope.',
+  },
+  formatString: {
+    name: 'formatString',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'string',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Interpolates ${...} data pointers and expressions into a formatted string.',
+  },
+  formatNumber: {
+    name: 'formatNumber',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'string',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Formats a numeric value with configurable decimal precision and thousands grouping.',
+  },
+  formatCurrency: {
+    name: 'formatCurrency',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'string',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Formats a number as an ISO 4217 currency string (e.g. USD).',
+  },
+  formatDate: {
+    name: 'formatDate',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'string',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Formats a date string or timestamp using Unicode TR35 tokens.',
+  },
+  pluralize: {
+    name: 'pluralize',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'string',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Selects localized CLDR plural category string (zero/one/two/few/many/other).',
+  },
+  required: {
+    name: 'required',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'validationResult',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Validates that a value is non-null, non-empty string, or non-empty list.',
+  },
+  numeric: {
+    name: 'numeric',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'validationResult',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Validates that a value is numeric and within optional min/max bounds.',
+  },
+  regex: {
+    name: 'regex',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'validationResult',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Validates that a string matches a regular expression pattern.',
+  },
+  length: {
+    name: 'length',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'validationResult',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Validates string or array length against min/max bounds.',
+  },
+  email: {
+    name: 'email',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'validationResult',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Validates that a string is a syntactically valid email address.',
+  },
+  and: {
+    name: 'and',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'boolean',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Logical AND across an array of boolean or ValidationResult values.',
+  },
+  or: {
+    name: 'or',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'boolean',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Logical OR across an array of boolean or ValidationResult values.',
+  },
+  not: {
+    name: 'not',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'boolean',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Logical NOT negation of a boolean or ValidationResult value.',
+  },
+  contains: {
+    name: 'contains',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'boolean',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Checks whether a string or array contains a target item.',
+  },
+  equals: {
+    name: 'equals',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'boolean',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description: 'Deep equality comparison between two values.',
+  },
+  openUrl: {
+    name: 'openUrl',
+    catalogId: A2UI_BASIC_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'void',
+    allowedCallers: 'rendererOnly',
+    requiresUserActivation: true,
+    description:
+      'Opens an external URL in a new browser tab; requires direct user gesture activation.',
+  },
+
+  // --- FreshCart Grocery Catalog Client-Side Functions ---
+  calculateNetCarbs: {
+    name: 'calculateNetCarbs',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'number',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Client-side reactive formula: computes net digestible carbs (totalCarbs - fiber - sugarAlcohols) per serving or total meal.',
+  },
+  computeUnitSavings: {
+    name: 'computeUnitSavings',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'string',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Client-side reactive formula: computes final per-serving cost and combined promo + loyalty + server coupon savings.',
+  },
+  checkDietaryMatch: {
+    name: 'checkDietaryMatch',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'validationResult',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Client-side validation function: checks if net carbs and protein per serving satisfy the active dietary goal (Keto, High-Protein, or Mediterranean).',
+  },
+  validatePromoCodeFormat: {
+    name: 'validatePromoCodeFormat',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'validationResult',
+    allowedCallers: 'rendererOnly',
+    requiresUserActivation: false,
+    description:
+      'Client-side validation function: validates FreshCart promo code syntax and eligibility before checkout.',
+  },
+  applyLocalNutritionPreset: {
+    name: 'applyLocalNutritionPreset',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'object',
+    allowedCallers: 'rendererOnly',
+    requiresUserActivation: true,
+    description:
+      'Client-side local action function (rendererOnly, requiresUserActivation): applies a kitchen preset (Keto, High-Protein, Mediterranean) synchronously on the client.',
+  },
+  copyShoppingSummary: {
+    name: 'copyShoppingSummary',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'string',
+    allowedCallers: 'rendererOnly',
+    requiresUserActivation: true,
+    description:
+      'Client-side local action function (rendererOnly, requiresUserActivation): copies the formatted meal & coupon summary to the clipboard.',
+  },
+  getClientKitchenAndCartMetrics: {
+    name: 'getClientKitchenAndCartMetrics',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'client',
+    returnType: 'object',
+    allowedCallers: 'agentOnly',
+    requiresUserActivation: false,
+    description:
+      'Agent-only client inspection function (allowedCallers: agentOnly): invoked by the agent via callRendererFunction to read live cart metrics, store ETA, and browser locale.',
+  },
+
+  // --- FreshCart Grocery Catalog Server-Side Functions (Renderer -> Agent RPC) ---
+  optimizeLiveStoreCoupons: {
+    name: 'optimizeLiveStoreCoupons',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'server',
+    returnType: 'object',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Server-side RPC function (callAgentFunction -> agentFunctionResponse): queries live store inventory and stackable digital coupons on the server.',
+  },
+  analyzeMealMicronutrients: {
+    name: 'analyzeMealMicronutrients',
+    catalogId: FRESHCART_GROCERY_CATALOG_ID,
+    executionTarget: 'server',
+    returnType: 'object',
+    allowedCallers: 'rendererOrAgent',
+    requiresUserActivation: false,
+    description:
+      'Server-side RPC function (callAgentFunction -> agentFunctionResponse): performs deep server-side micronutrient density, Omega-3, and glycemic load analysis.',
+  },
+};
+
+export function getCatalogFunctionMetadata(
+  fnName: string
+): A2UICatalogFunctionMetadata | undefined {
+  return A2UI_FUNCTION_CATALOG_REGISTRY[fnName];
+}
 
 export interface DataEvaluationContext {
   /** Root dataModel of the active surface */
@@ -19,8 +329,21 @@ export interface DataEvaluationContext {
   collectionIndex?: number;
   /** Default catalogId of the surface */
   defaultCatalogId?: string;
-  /** Whether evaluation is triggered by a direct user gesture (used by openUrl) */
+  /** Whether evaluation is triggered by a direct user gesture (used by openUrl & local actions) */
   isUserActivated?: boolean;
+  /** Whether the function is being invoked locally by the renderer or remotely via callRendererFunction */
+  callerKind?: 'renderer' | 'agent';
+  /** Callback when a local client action function updates the surface DataModel synchronously */
+  onLocalStatePatch?: (patch: Record<string, unknown>, label: string) => void;
+  /**
+   * Spec Fallback Routing callback (`a2ui_protocol.md` § "Fallback Routing"):
+   * When a FunctionCall targets a server-side function or a function not locally
+   * implemented on the renderer, dispatches `callAgentFunction` over the wire.
+   */
+  onFallbackServerRpc?: (
+    call: A2UIFunctionCall,
+    evaluatedArgs: Record<string, unknown>
+  ) => void;
 }
 
 export function createRootEvaluationContext(
@@ -33,6 +356,7 @@ export function createRootEvaluationContext(
     collectionIndex: undefined,
     defaultCatalogId,
     isUserActivated: false,
+    callerKind: 'renderer',
   };
 }
 
@@ -259,7 +583,6 @@ function interpolateFormatString(
   evaluatedArgs: Record<string, unknown>,
   context: DataEvaluationContext
 ): string {
-  // Temporary sentinel for escaped `\${`
   const ESCAPED_SENTINEL = '\u0000A2UI_ESCAPED_DOLLAR_BRACE\u0000';
   let result = rawTemplate.replace(/\\\$\{/g, ESCAPED_SENTINEL);
 
@@ -298,6 +621,109 @@ function interpolateFormatString(
   return result.split(ESCAPED_SENTINEL).join('${');
 }
 
+export interface FunctionPolicyEvaluationOutcome {
+  ok: boolean;
+  value?: unknown;
+  error?: {
+    code: string;
+    message: string;
+  };
+  metadata?: A2UICatalogFunctionMetadata;
+}
+
+/**
+ * Evaluates an A2UI v1.0 `{"@call": "...", "args": {...}}` expression while strictly
+ * enforcing A2UI v1.0 `allowedCallers` (`rendererOnly` | `agentOnly` | `rendererOrAgent`)
+ * and `requiresUserActivation` security boundaries.
+ */
+export function evaluateFunctionCallWithPolicy(
+  call: A2UIFunctionCall,
+  context: DataEvaluationContext
+): FunctionPolicyEvaluationOutcome {
+  const fnName = call['@call'];
+  const metadata = getCatalogFunctionMetadata(fnName);
+  const callerKind = context.callerKind ?? 'renderer';
+
+  // 1. Enforce A2UI v1.0 allowedCallers boundary
+  if (metadata) {
+    if (callerKind === 'agent' && metadata.allowedCallers === 'rendererOnly') {
+      return {
+        ok: false,
+        metadata,
+        error: {
+          code: 'INVALID_FUNCTION_CALL',
+          message: `Function '${fnName}' has allowedCallers='rendererOnly' and cannot be invoked remotely by the agent via callRendererFunction.`,
+        },
+      };
+    }
+
+    // Fixes BUG-2 in @a2ui/web_core@0.14.0 where agentOnly functions were not blocked on local UI bindings/actions
+    if (callerKind === 'renderer' && metadata.allowedCallers === 'agentOnly') {
+      return {
+        ok: false,
+        metadata,
+        error: {
+          code: 'INVALID_FUNCTION_CALL',
+          message: `Function '${fnName}' has allowedCallers='agentOnly' and is restricted exclusively to agent-initiated callRendererFunction execution.`,
+        },
+      };
+    }
+
+    // 2. Enforce requiresUserActivation gesture policy
+    if (metadata.requiresUserActivation && !context.isUserActivated) {
+      return {
+        ok: false,
+        metadata,
+        error: {
+          code: 'EXPRESSION_ERROR',
+          message: `Function '${fnName}' has requiresUserActivation=true and can only be invoked inside a direct user-activated gesture.`,
+        },
+      };
+    }
+  }
+
+  // Evaluate all arguments recursively first
+  const rawArgs = call.args ?? {};
+  const args: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(rawArgs)) {
+    args[key] = evaluateDynamicValue(val, context);
+  }
+
+  // 3. Spec Fallback Routing (`a2ui_protocol.md` lines 1419-1426):
+  // If the function is registered as a server-side function (or not locally implemented),
+  // route to `callAgentFunction` when a fallback RPC dispatcher is available.
+  if (metadata?.executionTarget === 'server') {
+    if (context.onFallbackServerRpc) {
+      context.onFallbackServerRpc(call, args);
+    }
+    const cachedResults = getValueAtPointer(
+      context.rootDataModel,
+      `/rpcResults/${fnName}`
+    );
+    return {
+      ok: true,
+      metadata,
+      value: cachedResults ?? { status: 'dispatched_to_agent', fnName },
+    };
+  }
+
+  const value = executeLocalCatalogFunction(fnName, args, context, call);
+  if (value === undefined && !metadata && context.onFallbackServerRpc) {
+    // Unknown local function -> fallback to callAgentFunction per spec
+    context.onFallbackServerRpc(call, args);
+    return {
+      ok: true,
+      value: { status: 'dispatched_to_agent', fnName },
+    };
+  }
+
+  return {
+    ok: true,
+    metadata,
+    value,
+  };
+}
+
 /**
  * Evaluates an A2UI v1.0 `{"@call": "...", "args": {...}}` expression.
  */
@@ -305,19 +731,25 @@ export function evaluateFunctionCall(
   call: A2UIFunctionCall,
   context: DataEvaluationContext
 ): unknown {
-  const fnName = call['@call'];
-  const rawArgs = call.args ?? {};
-
-  // Evaluate all arguments recursively first
-  const args: Record<string, unknown> = {};
-  for (const [key, val] of Object.entries(rawArgs)) {
-    args[key] = evaluateDynamicValue(val, context);
+  const outcome = evaluateFunctionCallWithPolicy(call, context);
+  if (!outcome.ok) {
+    return undefined;
   }
+  return outcome.value;
+}
 
+function executeLocalCatalogFunction(
+  fnName: string,
+  args: Record<string, unknown>,
+  context: DataEvaluationContext,
+  rawCall: A2UIFunctionCall
+): unknown {
   switch (fnName) {
     case '@index': {
-      const offset = typeof args.offset === 'number' ? args.offset : Number(args.offset ?? 0);
-      const baseIndex = typeof context.collectionIndex === 'number' ? context.collectionIndex : 0;
+      const offset =
+        typeof args.offset === 'number' ? args.offset : Number(args.offset ?? 0);
+      const baseIndex =
+        typeof context.collectionIndex === 'number' ? context.collectionIndex : 0;
       return baseIndex + (Number.isNaN(offset) ? 0 : offset);
     }
 
@@ -384,7 +816,11 @@ export function evaluateFunctionCall(
       const count = Number(args.value ?? 0);
       const safeCount = Number.isFinite(count) ? count : 0;
       if (safeCount === 0 && args.zero !== undefined) {
-        return interpolateFormatString(String(args.zero), { ...args, count: safeCount }, context);
+        return interpolateFormatString(
+          String(args.zero),
+          { ...args, count: safeCount },
+          context
+        );
       }
       const category = new Intl.PluralRules('en-US').select(safeCount);
       const chosen =
@@ -397,7 +833,11 @@ export function evaluateFunctionCall(
               : category === 'many' && args.many !== undefined
                 ? args.many
                 : args.other) ?? '';
-      return interpolateFormatString(String(chosen), { ...args, count: safeCount }, context);
+      return interpolateFormatString(
+        String(chosen),
+        { ...args, count: safeCount },
+        context
+      );
     }
 
     case 'required': {
@@ -421,7 +861,8 @@ export function evaluateFunctionCall(
     case 'numeric': {
       const raw = args.value;
       const strVal = raw === null || raw === undefined ? '' : String(raw).trim();
-      const num = typeof raw === 'number' ? raw : strVal === '' ? NaN : Number(strVal);
+      const num =
+        typeof raw === 'number' ? raw : strVal === '' ? NaN : Number(strVal);
       const min = args.min !== undefined ? Number(args.min) : undefined;
       const max = args.max !== undefined ? Number(args.max) : undefined;
 
@@ -571,8 +1012,255 @@ export function evaluateFunctionCall(
       return undefined;
     }
 
-    default:
-      return undefined;
+    // --- FreshCart Grocery Catalog Client-Side Functions ---
+    case 'calculateNetCarbs': {
+      const totalCarbs = Number(args.totalCarbs ?? 24);
+      const fiber = Number(args.fiber ?? 9);
+      const sugarAlcohols = Number(args.sugarAlcohols ?? 3);
+      const multiplier =
+        args.perServing === false ? Math.max(1, Number(args.servings ?? 1)) : 1;
+      const netPerServing = Math.max(
+        0,
+        Number((totalCarbs - fiber - sugarAlcohols).toFixed(1))
+      );
+      return Number((netPerServing * multiplier).toFixed(1));
+    }
+
+    case 'computeUnitSavings': {
+      const baseSubtotal = Number(args.subtotal ?? 42.96);
+      const servings = Math.max(1, Number(args.servings ?? 4));
+      const promoRaw = String(args.promoCode ?? '')
+        .trim()
+        .toUpperCase();
+      const loyaltyMember = coerceToBoolean(args.loyaltyMember ?? true);
+      const serverCouponDiscount = Number(args.serverCouponDiscount ?? 0);
+
+      let promoDiscount = 0;
+      if (promoRaw === 'KETO20') {
+        promoDiscount = Number((baseSubtotal * 0.2).toFixed(2));
+      } else if (promoRaw === 'FRESH15') {
+        promoDiscount = Number((baseSubtotal * 0.15).toFixed(2));
+      } else if (promoRaw === 'A2UIV1') {
+        promoDiscount = 10.0;
+      } else if (promoRaw === 'ORGANIC10') {
+        promoDiscount = Number((baseSubtotal * 0.1).toFixed(2));
+      }
+
+      const loyaltyDiscount = loyaltyMember
+        ? Number((baseSubtotal * 0.1).toFixed(2))
+        : 0;
+      const totalSaved = Number(
+        (promoDiscount + loyaltyDiscount + serverCouponDiscount).toFixed(2)
+      );
+      const finalTotal = Math.max(
+        9.99,
+        Number((baseSubtotal - totalSaved).toFixed(2))
+      );
+      const perServing = Number((finalTotal / servings).toFixed(2));
+
+      return `$${perServing.toFixed(2)}/serving · Final $${finalTotal.toFixed(2)} (Save $${totalSaved.toFixed(2)})`;
+    }
+
+    case 'checkDietaryMatch': {
+      const rawGoal = args.dietaryGoal;
+      const goal = Array.isArray(rawGoal)
+        ? String(rawGoal[0] ?? 'keto')
+        : String(rawGoal ?? 'keto');
+      const netCarbs = Number(args.netCarbsPerServing ?? 12);
+      const protein = Number(args.proteinPerServing ?? 44);
+
+      if (goal === 'keto') {
+        if (netCarbs <= 15) {
+          return {
+            valid: true,
+            code: 'KETO_MATCH',
+            message: `Keto friendly: ${netCarbs}g net carbs/serving (≤ 15g limit).`,
+            severity: 'info',
+          } satisfies A2UIValidationResult;
+        }
+        return {
+          valid: false,
+          code: 'KETO_CARB_LIMIT_EXCEEDED',
+          message: `Net carbs (${netCarbs}g/serving) exceed the 15g strict Keto target. Try applying the Keto Preset or increasing fiber.`,
+          severity: 'warning',
+        } satisfies A2UIValidationResult;
+      }
+
+      if (goal === 'high_protein') {
+        if (protein >= 35) {
+          return {
+            valid: true,
+            code: 'HIGH_PROTEIN_MATCH',
+            message: `High-Protein target met (${protein}g protein/serving).`,
+            severity: 'info',
+          } satisfies A2UIValidationResult;
+        }
+        return {
+          valid: false,
+          code: 'PROTEIN_BELOW_TARGET',
+          message: `Protein (${protein}g/serving) is below the 35g High-Protein goal.`,
+          severity: 'warning',
+        } satisfies A2UIValidationResult;
+      }
+
+      return {
+        valid: true,
+        code: 'MEDITERRANEAN_MATCH',
+        message: 'Balanced Mediterranean macro profile verified.',
+        severity: 'info',
+      } satisfies A2UIValidationResult;
+    }
+
+    case 'validatePromoCodeFormat': {
+      const code = String(args.value ?? '')
+        .trim()
+        .toUpperCase();
+      if (!code) {
+        return { valid: true } satisfies A2UIValidationResult;
+      }
+      if (!/^[A-Z0-9]{4,12}$/.test(code)) {
+        return {
+          valid: false,
+          code: 'INVALID_PROMO_SYNTAX',
+          message:
+            'Promo codes must be 4–12 uppercase letters or digits (try KETO20, FRESH15, or A2UIV1).',
+          severity: 'error',
+        } satisfies A2UIValidationResult;
+      }
+      if (code === 'EXPIRED10') {
+        return {
+          valid: false,
+          code: 'PROMO_EXPIRED',
+          message:
+            'Code EXPIRED10 ended last week. Use KETO20 (20% off) or FRESH15 (15% off) instead.',
+          severity: 'warning',
+        } satisfies A2UIValidationResult;
+      }
+      const recognized = ['KETO20', 'FRESH15', 'A2UIV1', 'ORGANIC10'];
+      if (!recognized.includes(code)) {
+        return {
+          valid: false,
+          code: 'UNRECOGNIZED_PROMO',
+          message: `Code '${code}' is not in your store wallet. Try KETO20, FRESH15, ORGANIC10, or A2UIV1.`,
+          severity: 'warning',
+        } satisfies A2UIValidationResult;
+      }
+      return { valid: true } satisfies A2UIValidationResult;
+    }
+
+    case 'applyLocalNutritionPreset': {
+      const preset = String(args.preset ?? 'keto');
+      const servings = Number(args.servings ?? (preset === 'keto' ? 2 : 6));
+      const promoCode = String(
+        args.promoCode ?? (preset === 'keto' ? 'KETO20' : 'FRESH15')
+      );
+
+      const patch: Record<string, unknown> =
+        preset === 'keto'
+          ? {
+              dietaryGoal: ['keto'],
+              servings,
+              promoCodeInput: promoCode,
+              baseCarbs: 19,
+              baseFiber: 8,
+              sugarAlcohols: 2,
+              baseProtein: 44,
+              loyaltyMember: true,
+              lastClientFunctionStatus:
+                'Applied Low-Carb Keto Preset locally on client (9g net carbs/serving, code KETO20) — 0ms local execution ✓',
+              statusBanner:
+                'Applied Low-Carb Keto Preset (2 servings, 9g net carbs, code KETO20) ✓',
+            }
+          : preset === 'high_protein'
+            ? {
+                dietaryGoal: ['high_protein'],
+                servings,
+                promoCodeInput: promoCode,
+                baseCarbs: 28,
+                baseFiber: 7,
+                sugarAlcohols: 0,
+                baseProtein: 52,
+                loyaltyMember: true,
+                lastClientFunctionStatus:
+                  'Applied Family High-Protein Pack locally on client (52g protein/serving, code FRESH15) — 0ms local execution ✓',
+                statusBanner:
+                  'Applied Family High-Protein Pack (6 servings, 52g protein, code FRESH15) ✓',
+              }
+            : {
+                dietaryGoal: ['mediterranean'],
+                servings: 4,
+                promoCodeInput: 'ORGANIC10',
+                baseCarbs: 24,
+                baseFiber: 9,
+                sugarAlcohols: 3,
+                baseProtein: 42,
+                loyaltyMember: true,
+                lastClientFunctionStatus:
+                  'Applied Mediterranean Heart-Healthy Preset locally on client — 0ms local execution ✓',
+                statusBanner:
+                  'Applied Mediterranean Heart-Healthy Preset (4 servings, code ORGANIC10) ✓',
+              };
+
+      context.onLocalStatePatch?.(
+        patch,
+        `Client Function @call:${fnName}(${preset})`
+      );
+      return patch;
+    }
+
+    case 'copyShoppingSummary': {
+      const title = String(args.title ?? 'FreshCart Smart Kitchen Plan');
+      const netCarbs = String(args.netCarbs ?? '12');
+      const unitSavings = String(args.unitSavings ?? '$7.99/serving');
+      const summaryText = `${title} — ${netCarbs}g net carbs/serving · ${unitSavings}`;
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        void navigator.clipboard.writeText(summaryText).catch(() => {});
+      }
+      const patch = {
+        lastClientFunctionStatus: `Copied "${summaryText}" to clipboard via client function ✓`,
+        statusBanner: `Copied shopping summary to clipboard ✓`,
+      };
+      context.onLocalStatePatch?.(patch, `Client Function @call:${fnName}`);
+      return summaryText;
+    }
+
+    case 'getClientKitchenAndCartMetrics': {
+      const bridge = getClientLiveBridgeSnapshot();
+      const rawGoal = args.dietaryGoal ?? context.rootDataModel.dietaryGoal;
+      const activeDietaryGoal = Array.isArray(rawGoal)
+        ? String(rawGoal[0] ?? 'keto')
+        : String(rawGoal ?? 'keto');
+      const locale =
+        typeof navigator !== 'undefined' && navigator.language
+          ? navigator.language
+          : 'en-US';
+      const timezone =
+        typeof Intl !== 'undefined'
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone
+          : 'America/Los_Angeles';
+
+      return {
+        cartItemCount: bridge.cartItemCount,
+        cartSubtotal: Number(bridge.cartSubtotal.toFixed(2)),
+        activeStoreId: bridge.activeStoreId,
+        activeStoreName: bridge.activeStoreName,
+        deliveryEtaMinutes: bridge.deliveryEtaMinutes,
+        cartSampleItems: bridge.cartItemNames.slice(0, 4),
+        activeDietaryGoal,
+        clientLocale: locale,
+        clientTimezone: timezone,
+        inspectedAt: new Date().toISOString(),
+      };
+    }
+
+    default: {
+      // Check if an existing server RPC result is cached in the data model for this function
+      const cached = getValueAtPointer(
+        context.rootDataModel,
+        `/rpcResults/${rawCall['@call']}`
+      );
+      return cached;
+    }
   }
 }
 
@@ -610,7 +1298,9 @@ export function evaluateDynamicValue(
 
   if (typeof value === 'object') {
     const out: Record<string, unknown> = {};
-    for (const [rawKey, propVal] of Object.entries(value as Record<string, unknown>)) {
+    for (const [rawKey, propVal] of Object.entries(
+      value as Record<string, unknown>
+    )) {
       // Unescape doubled `@@` prefix to a literal single `@` per A2UI v1.0 spec
       const resolvedKey = rawKey.startsWith('@@') ? rawKey.slice(1) : rawKey;
       out[resolvedKey] = evaluateDynamicValue(propVal, context);

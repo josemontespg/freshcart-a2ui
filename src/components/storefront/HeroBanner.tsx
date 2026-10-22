@@ -7,17 +7,15 @@ import {
   Sparkles,
   Tag,
   UtensilsCrossed,
+  Zap,
 } from 'lucide-react';
 import type { DietaryTag, Store } from '../../types/grocery';
+import type { ScenarioId } from '../ai-shopper/ScenarioSelector';
 
 export interface HeroBannerProps {
   store: Store;
-  onLaunchAIScenario?: (
-    scenarioId: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
-  ) => void;
-  onOpenAIShopper?: (
-    scenarioId?: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
-  ) => void;
+  onLaunchAIScenario?: (scenarioId: ScenarioId) => void;
+  onOpenAIShopper?: (scenarioId?: ScenarioId) => void;
   onQuickFilterTag?: (tag: DietaryTag) => void;
 }
 
@@ -30,9 +28,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   const scenarioId =
     store.featuredPromoBanner.linkedScenarioId ?? 'meal-planner';
 
-  const handleTriggerScenario = (
-    targetScenario: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
-  ) => {
+  const handleTriggerScenario = (targetScenario: ScenarioId) => {
     if (onLaunchAIScenario) {
       onLaunchAIScenario(targetScenario);
     } else if (onOpenAIShopper) {
@@ -90,11 +86,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
             <button
               type="button"
-              onClick={() => handleTriggerScenario('cart-optimizer')}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/12 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 transition-all cursor-pointer"
+              onClick={() => handleTriggerScenario('smart-functions')}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-sm border border-white/25 transition-all cursor-pointer"
             >
-              <PiggyBank className="w-4 h-4 text-emerald-200" />
-              <span>Smart Cart Swaps</span>
+              <Zap className="w-4 h-4 text-emerald-200" />
+              <span>Smart Coupons &amp; Nutrition</span>
             </button>
 
             {onQuickFilterTag && (
@@ -111,7 +107,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
 
         {/* Right-hand consumer-friendly "Shop Smarter with AI" quick-launch card */}
-        <div className="lg:w-84 shrink-0 bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 space-y-3">
+        <div className="lg:w-84 shrink-0 bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-white">
               <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
@@ -123,6 +119,27 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           </div>
 
           <div className="grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              onClick={() => handleTriggerScenario('smart-functions')}
+              className="group flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-emerald-300/25 text-left transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 rounded-lg bg-[#0AAD0A] flex items-center justify-center shrink-0">
+                  <Zap className="w-4 h-4 text-white" />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white">
+                    Smart Coupons &amp; Nutrition
+                  </div>
+                  <div className="text-[11px] text-emerald-100/90 truncate">
+                    Live store coupons, net-carb calc &amp; cart sync
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-emerald-200 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </button>
+
             <button
               type="button"
               onClick={() => handleTriggerScenario('meal-planner')}

@@ -4,11 +4,16 @@ import {
   UtensilsCrossed,
   ArrowLeftRight,
   Wallet,
+  Zap,
   Send,
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder'
+  | 'smart-functions';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -28,9 +33,18 @@ export interface QuickPromptChip {
   label: string;
   prompt: string;
   scenarioId: ScenarioId;
+  featured?: boolean;
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-smart-functions',
+    label: '⚡ Smart Coupons & Nutrition Calculator',
+    prompt:
+      'Calculate live store coupons, net-carb nutrition targets, and personalized kitchen matches for my cart.',
+    scenarioId: 'smart-functions',
+    featured: true,
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',
@@ -103,6 +117,13 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
     icon: React.ReactNode;
   }> = [
     {
+      id: 'smart-functions',
+      title: 'Smart Functions',
+      subtitle: 'Coupons & Nutrition RPC',
+      badge: 'Live RPC',
+      icon: <Zap className="w-4 h-4" />,
+    },
+    {
       id: 'meal-planner',
       title: 'Meal Planner',
       subtitle: 'Recipes & ingredients',
@@ -170,9 +191,9 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
         ))}
       </div>
 
-      {/* 3 Clean Navigation Tabs */}
+      {/* 4 Clean Navigation Tabs */}
       <div
-        className="grid grid-cols-3 gap-2"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2"
         role="tablist"
         aria-label="Shopping assistant tools"
       >

@@ -25,6 +25,34 @@ export interface A2UIFunctionCall {
   args?: Record<string, A2UIDynamicValue>;
 }
 
+/**
+ * A2UI v1.0 Function Execution Policy Metadata (`catalog_definition.json`)
+ */
+export type A2UIAllowedCallers =
+  | 'rendererOnly'
+  | 'agentOnly'
+  | 'rendererOrAgent';
+
+export type A2UIFunctionReturnType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'array'
+  | 'object'
+  | 'validationResult'
+  | 'any'
+  | 'void';
+
+export interface A2UICatalogFunctionMetadata {
+  name: string;
+  catalogId: string;
+  executionTarget: 'client' | 'server';
+  returnType: A2UIFunctionReturnType;
+  allowedCallers: A2UIAllowedCallers;
+  requiresUserActivation: boolean;
+  description: string;
+}
+
 export type A2UIDynamicValue =
   | string
   | number
@@ -195,7 +223,7 @@ export type A2UIv1Message =
   | A2UIAgentFunctionResponseMessage;
 
 /**
- * Renderer-to-Agent v1.0 Outbound Event Envelopes (`renderer_to_agent.json`)
+ * Renderer-to-Agent v1.0 Outbound Event & RPC Envelopes (`renderer_to_agent.json`)
  */
 export interface A2UIActionEvent {
   version: 'v1.0';
@@ -210,6 +238,20 @@ export interface A2UIActionEvent {
       extensions?: Record<string, unknown>;
     };
   };
+}
+
+export interface A2UICallAgentFunctionMessage {
+  version: 'v1.0';
+  callAgentFunction: {
+    surfaceId: string;
+    functionCallId: string;
+    callFunction: A2UIFunctionCall;
+  };
+}
+
+export interface A2UIRendererFunctionResponseMessage {
+  version: 'v1.0';
+  rendererFunctionResponse: A2UIFunctionResponsePayload;
 }
 
 export interface A2UIRendererErrorEvent {
@@ -227,6 +269,12 @@ export interface A2UIRendererErrorEvent {
     message: string;
   };
 }
+
+export type A2UIRendererToAgentMessage =
+  | A2UIActionEvent
+  | A2UICallAgentFunctionMessage
+  | A2UIRendererFunctionResponseMessage
+  | A2UIRendererErrorEvent;
 
 export interface A2UISurfaceState {
   surfaceId: string;
@@ -247,6 +295,7 @@ export type A2UIEnvelopeKind =
   | 'deleteSurface'
   | 'callRendererFunction'
   | 'agentFunctionResponse'
+  | 'callAgentFunction'
   | 'action'
   | 'rendererFunctionResponse'
   | 'error';
@@ -261,8 +310,7 @@ export interface A2UIProtocolLogEntry {
   sourceLabel?: string;
   payload:
     | A2UIv1Message
-    | A2UIActionEvent
-    | A2UIRendererErrorEvent
+    | A2UIRendererToAgentMessage
     | Record<string, unknown>;
   /** Snapshot of the target surface state immediately after this message was applied */
   surfaceSnapshotAfter?: A2UISurfaceState | null;
@@ -273,7 +321,8 @@ export interface A2UISurfaceManagerState {
   log: A2UIProtocolLogEntry[];
   outboundResponses: Array<
     | A2UIRendererErrorEvent
-    | { version: 'v1.0'; rendererFunctionResponse: A2UIFunctionResponsePayload }
+    | A2UIRendererFunctionResponseMessage
+    | A2UICallAgentFunctionMessage
   >;
 }
 
