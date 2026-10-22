@@ -4,6 +4,9 @@ import {
   X,
   Send,
   RotateCcw,
+  Zap,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   A2UI_VERSION,
@@ -27,6 +30,12 @@ import {
   processA2UIMessage,
   recordOutboundActionEvent,
 } from '../../a2ui/SurfaceManager';
+import type { ExpressCompilationResult } from '../../a2ui/express/expressCompiler';
+import {
+  buildExpressShopperCompilation,
+  buildExpressShopperStream,
+  recalculateExpressShopperDataModel,
+} from '../../scenarios/expressShopperScenario';
 import {
   buildMealPlannerStream,
   recalculateMealPlannerDataModel,
@@ -63,6 +72,7 @@ export interface ChatTurn {
   text: string;
   surfaceId?: string;
   scenarioHint?: ScenarioId;
+  expressCompilation?: ExpressCompilationResult;
 }
 
 export interface AIShopperDrawerProps {
@@ -90,12 +100,16 @@ export interface AIShopperDrawerProps {
 }
 
 const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
+  'express-checkout':
+    'Build a 15-minute express garlic herb salmon & heirloom tomato skillet for 2 with 1-tap express cart checkout',
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
+  'express-checkout':
+    'Here is your 15-minute garlic herb salmon & heirloom tomato skillet bundle with priority courier delivery and 1-tap cart checkout:',
   'meal-planner':
     'Here is a chef-curated dinner plan you can customize by servings and dietary preferences:',
   'cart-optimizer':
@@ -154,6 +168,14 @@ function inferScenarioFromPrompt(
   fallback: ScenarioId = 'meal-planner'
 ): ScenarioId {
   const lower = promptText.toLowerCase();
+  if (
+    lower.includes('express') ||
+    lower.includes('15-min') ||
+    lower.includes('15 min') ||
+    lower.includes('skillet')
+  ) {
+    return 'express-checkout';
+  }
   if (
     lower.includes('swap') ||
     lower.includes('cart') ||
@@ -218,9 +240,19 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [expandedExpressTurnIds, setExpandedExpressTurnIds] = useState<
+    Record<string, boolean>
+  >({});
 
   const turnCounterRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  const toggleExpressPreview = useCallback((turnId: string) => {
+    setExpandedExpressTurnIds((prev) => ({
+      ...prev,
+      [turnId]: !prev[turnId],
+    }));
+  }, []);
 
   const dispatchMessage = useCallback(
     (message: A2UIv1Message, sourceLabel?: string) => {
@@ -247,6 +279,17 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'express-checkout') {
+        const servings =
+          parsedNum && parsedNum >= 1 && parsedNum <= 8 ? parsedNum : 2;
+        return buildExpressShopperStream({
+          servings,
+          organicOnly: !lower.includes('standard'),
+          products: effectiveProducts,
+          activeStoreId: effectiveStoreId,
+        });
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -366,6 +409,32 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           text: trimmed,
         },
       ]);
+
+      if (scenarioHint === 'express-checkout') {
+        const compiled = buildExpressShopperCompilation({
+          servings: 2,
+          organicOnly: !trimmed.toLowerCase().includes('standard'),
+          products: effectiveProducts,
+          activeStoreId: effectiveStoreId,
+        });
+        dispatchEnvelopesForSurface(
+          compiled.envelopes,
+          surfaceId,
+          'A2UI Express Compiler'
+        );
+        setChatTurns((prev) => [
+          ...prev,
+          {
+            id: assistantTurnId,
+            role: 'assistant',
+            text: SCENARIO_ASSISTANT_INTROS['express-checkout'],
+            surfaceId,
+            scenarioHint: 'express-checkout',
+            expressCompilation: compiled,
+          },
+        ]);
+        return;
+      }
 
       if (preferBlueprintInstant) {
         const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
@@ -525,7 +594,47 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         updatedTempState.surfaces[surfaceId]?.dataModel ??
         currentSurface.dataModel;
 
-      if (Array.isArray(nextModel.ingredients)) {
+      if (nextModel.isExpressScenario) {
+        const recalculated = recalculateExpressShopperDataModel(
+          nextModel,
+          effectiveProducts
+        );
+        if (pointerPath === '/servings' || pointerPath === '/organicOnly') {
+          const recompiled = buildExpressShopperCompilation({
+            servings: Number(recalculated.servings ?? 2),
+            organicOnly: Boolean(recalculated.organicOnly ?? true),
+            deliveryZip: String(recalculated.deliveryZip ?? '94107'),
+            products: effectiveProducts,
+            activeStoreId: effectiveStoreId,
+          });
+          const updateCompsMsg = recompiled.envelopes.find(
+            (m) => 'updateComponents' in m
+          );
+          if (updateCompsMsg && 'updateComponents' in updateCompsMsg) {
+            dispatchMessage(
+              {
+                version: A2UI_VERSION,
+                updateComponents: {
+                  surfaceId,
+                  components: updateCompsMsg.updateComponents.components,
+                },
+              },
+              `Express Components Recalculation (${pointerPath})`
+            );
+          }
+        }
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: recalculated,
+            },
+          },
+          `Express Recalculation (${pointerPath})`
+        );
+      } else if (Array.isArray(nextModel.ingredients)) {
         const recalculated = recalculateMealPlannerDataModel(
           nextModel,
           pointerPath,
@@ -573,7 +682,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         );
       }
     },
-    [dispatchMessage, effectiveProducts, mergedSurfaces]
+    [dispatchMessage, effectiveProducts, effectiveStoreId, mergedSurfaces]
   );
 
   // Handle outbound A2UIActionEvent dispatches from any surface in the chat thread
@@ -975,7 +1084,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 )}
 
                 {surfaceState && (
-                  <div className="w-full">
+                  <div className="w-full space-y-2">
                     <A2UISurfaceRenderer
                       surface={surfaceState}
                       onAction={handleSurfaceAction}
@@ -983,6 +1092,58 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                       products={effectiveProducts}
                       showSurfaceBadge={false}
                     />
+
+                    {turn.expressCompilation && (
+                      <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 px-3.5 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-900">
+                            <Zap className="w-3.5 h-3.5 text-[#0AAD0A]" />
+                            <span>
+                              Compiled via A2UI Express ·{' '}
+                              {
+                                turn.expressCompilation.metrics
+                                  .tokenSavingsPercent
+                              }
+                              % fewer tokens (
+                              {
+                                turn.expressCompilation.metrics
+                                  .estimatedExpressTokens
+                              }{' '}
+                              vs{' '}
+                              {
+                                turn.expressCompilation.metrics
+                                  .estimatedJsonTokens
+                              }{' '}
+                              est. tokens)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleExpressPreview(turn.id)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0AAD0A] hover:text-[#088c08] cursor-pointer"
+                          >
+                            <span>
+                              {expandedExpressTurnIds[turn.id]
+                                ? 'Hide DSL'
+                                : 'View DSL'}
+                            </span>
+                            {expandedExpressTurnIds[turn.id] ? (
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+
+                        {expandedExpressTurnIds[turn.id] && (
+                          <div className="mt-2 pt-2 border-t border-emerald-200/70 space-y-1.5">
+                            <pre className="text-[10px] leading-relaxed font-mono bg-white/90 text-stone-800 p-2.5 rounded-xl border border-emerald-200/60 overflow-x-auto max-h-48">
+                              {turn.expressCompilation.expressDsl}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1013,7 +1174,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       {/* Bottom Chat Composer + Quick Suggestion Pills */}
       <div className="bg-white border-t border-stone-200/80 p-3 space-y-2.5 shrink-0">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          {QUICK_PROMPT_CHIPS.map((chip) => (
+          {QUICK_PROMPT_CHIPS.map((chip, idx) => (
             <button
               key={chip.id}
               type="button"
@@ -1021,7 +1182,11 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               onClick={() =>
                 void sendUserMessage(chip.label, chip.scenarioId)
               }
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70 transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer"
+              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer ${
+                idx === 0
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100 font-semibold shadow-2xs'
+                  : 'bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border-stone-200/70'
+              }`}
             >
               {chip.label}
             </button>
