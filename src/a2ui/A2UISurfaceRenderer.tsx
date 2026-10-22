@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
 import {
   A2UI_BASIC_CATALOG_ID,
+  A2UI_MCP_CATALOG_ID,
   FRESHCART_GROCERY_CATALOG_ID,
   type A2UIAction,
   type A2UIActionEvent,
@@ -27,6 +28,7 @@ import {
   renderBasicCatalogComponent,
 } from './catalogs/basicCatalogRenderer';
 import { renderGroceryCatalogComponent } from './catalogs/groceryCatalogRenderer';
+import { renderMcpCatalogComponent } from './catalogs/mcpCatalogRenderer';
 
 export interface A2UISurfaceRendererProps {
   /** Active surface state managed by SurfaceManager */
@@ -236,9 +238,17 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
     let renderedElement: React.ReactNode = null;
 
     if (
-      effectiveCatalogId === FRESHCART_GROCERY_CATALOG_ID ||
-      comp.component === 'ProductDealCard' ||
-      comp.component === 'NutritionSummary'
+      effectiveCatalogId === A2UI_MCP_CATALOG_ID ||
+      comp.component === 'McpApp'
+    ) {
+      renderedElement = renderMcpCatalogComponent(nodeContext);
+    }
+
+    if (
+      renderedElement === null &&
+      (effectiveCatalogId === FRESHCART_GROCERY_CATALOG_ID ||
+        comp.component === 'ProductDealCard' ||
+        comp.component === 'NutritionSummary')
     ) {
       renderedElement = renderGroceryCatalogComponent(nodeContext, {
         products,

@@ -45,6 +45,7 @@ import {
   recalculateBudgetBuilderDataModel,
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
+import { buildMcpKitchenAppStream } from '../../scenarios/mcpKitchenAppScenario';
 import {
   buildCompactCartContext,
   buildCompactCatalogContext,
@@ -90,12 +91,16 @@ export interface AIShopperDrawerProps {
 }
 
 const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
+  'mcp-kitchen':
+    'Launch the sandboxed MCP Kitchen Converter & Pairing App with two-way @path data binding and MCP tools/call',
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
+  'mcp-kitchen':
+    'Here is the interactive FreshCart Culinary Studio MCP App running inside an A2UI v1.0 double-iframe sandbox (`McpApp` + `callMcpTool`):',
   'meal-planner':
     'Here is a chef-curated dinner plan you can customize by servings and dietary preferences:',
   'cart-optimizer':
@@ -151,9 +156,20 @@ function rewriteEnvelopesSurfaceId(
 
 function inferScenarioFromPrompt(
   promptText: string,
-  fallback: ScenarioId = 'meal-planner'
+  fallback: ScenarioId = 'mcp-kitchen'
 ): ScenarioId {
   const lower = promptText.toLowerCase();
+  if (
+    lower.includes('mcp') ||
+    lower.includes('sandbox') ||
+    lower.includes('iframe') ||
+    lower.includes('converter') ||
+    lower.includes('metric') ||
+    lower.includes('imperial') ||
+    lower.includes('tools/call')
+  ) {
+    return 'mcp-kitchen';
+  }
   if (
     lower.includes('swap') ||
     lower.includes('cart') ||
@@ -196,7 +212,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   products: propProducts,
   cartItems: propCartItems,
   actionHandler: propActionHandler,
-  initialScenarioId = 'meal-planner',
+  initialScenarioId = 'mcp-kitchen',
   activeScenarioId: controlledScenarioId,
   onScenarioChange,
   onDispatchA2UIMessage,
@@ -247,6 +263,13 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'mcp-kitchen') {
+        const servings =
+          parsedNum && parsedNum >= 1 && parsedNum <= 10 ? parsedNum : 4;
+        const unitSystem = lower.includes('imperial') ? 'imperial' : 'metric';
+        return buildMcpKitchenAppStream({ servings, unitSystem });
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -367,7 +390,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         },
       ]);
 
-      if (preferBlueprintInstant) {
+      if (preferBlueprintInstant || scenarioHint === 'mcp-kitchen') {
         const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
         dispatchEnvelopesForSurface(envelopes, surfaceId, 'Quick Action');
         setChatTurns((prev) => [
@@ -481,6 +504,73 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     };
   }, [sendUserMessage]);
 
+  // Listen for declarative @call: "callMcpTool" invocations from A2UI Button components
+  useEffect(() => {
+    const handleCallMcpToolEvent = (evt: Event) => {
+      const detail = (
+        evt as CustomEvent<{
+          serverUrl: string;
+          toolName: string;
+          arguments: Record<string, unknown>;
+          targetDataPath?: string;
+        }>
+      ).detail;
+      if (!detail || !detail.toolName) return;
+
+      const latestTurnWithSurface = [...chatTurns]
+        .reverse()
+        .find((t) => Boolean(t.surfaceId));
+      const targetSurfaceId = latestTurnWithSurface?.surfaceId;
+
+      if (detail.toolName === 'sync_pantry_staples') {
+        effectiveActionHandler.addBundleToCart(
+          [
+            { productId: 'prod-extra-virgin-olive-oil', quantity: 1 },
+            { productId: 'prod-org-quinoa', quantity: 1 },
+          ],
+          'MCP Pantry Staples Sync'
+        );
+      }
+
+      if (targetSurfaceId) {
+        const targetPath = detail.targetDataPath || '/mcpState/toolResult';
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId: targetSurfaceId,
+              path: targetPath,
+              value: {
+                status: 'completed',
+                serverUrl: detail.serverUrl,
+                toolName: detail.toolName,
+                arguments: detail.arguments,
+                executedAt: new Date().toLocaleTimeString(),
+              },
+            },
+          },
+          `callMcpTool (${detail.toolName})`
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId: targetSurfaceId,
+              path: '/mcpState/lastActionConfirmation',
+              value: `Declarative callMcpTool('${detail.toolName}') synced pantry staples & wrote result to ${targetPath} ✓`,
+            },
+          },
+          `callMcpTool Confirmation`
+        );
+      }
+    };
+
+    window.addEventListener('a2ui:callMcpTool', handleCallMcpToolEvent);
+    return () => {
+      window.removeEventListener('a2ui:callMcpTool', handleCallMcpToolEvent);
+    };
+  }, [chatTurns, dispatchMessage, effectiveActionHandler]);
+
   const handleResetChat = useCallback(() => {
     turnCounterRef.current += 1;
     const resetSurfaceId = `chat_surface_${turnCounterRef.current}`;
@@ -585,6 +675,63 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const { name, surfaceId, context } = event.action;
       const currentSurface = mergedSurfaces[surfaceId];
       const currentModel = currentSurface?.dataModel ?? {};
+
+      if (name === 'add_mcp_pairing_to_cart') {
+        const servings = Number(context.servings ?? 4);
+        const unitSystem = String(context.unitSystem ?? 'metric');
+        const rawItems = Array.isArray(context.items)
+          ? (context.items as Array<{ productId?: string; quantity?: number }>)
+          : [
+              { productId: 'prod-salmon-fillet', quantity: Math.max(1, Math.round(servings / 2)) },
+              { productId: 'prod-extra-virgin-olive-oil', quantity: 1 },
+              { productId: 'prod-lemons', quantity: 1 },
+            ];
+
+        const validBundle = rawItems
+          .filter((it) => typeof it.productId === 'string' && it.productId.length > 0)
+          .map((it) => ({
+            productId: String(it.productId),
+            quantity: Math.max(1, Number(it.quantity ?? 1)),
+          }));
+
+        if (validBundle.length > 0) {
+          effectiveActionHandler.addBundleToCart(
+            validBundle,
+            `MCP Culinary Pairing (${servings} servings, ${unitSystem})`
+          );
+        }
+
+        const confirmMsg = `MCP Tool 'add_mcp_pairing_to_cart' added ${validBundle.length} pairing items (${servings} servings, ${unitSystem}) to your cart ✓`;
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/mcpState/lastActionConfirmation',
+              value: confirmMsg,
+            },
+          },
+          'MCP Tool add_mcp_pairing_to_cart'
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/mcpState/toolResult',
+              value: {
+                status: 'completed',
+                toolName: 'add_mcp_pairing_to_cart',
+                addedCount: validBundle.length,
+                servings,
+                unitSystem,
+              },
+            },
+          },
+          'MCP Tool Result Update'
+        );
+        return;
+      }
 
       if (name === 'add_recipe_bundle_to_cart') {
         const servings = Number(context.servings ?? currentModel.servings ?? 4);
