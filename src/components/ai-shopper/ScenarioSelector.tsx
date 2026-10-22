@@ -33,28 +33,28 @@ export interface QuickPromptChip {
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
   {
     id: 'chip-salmon-4',
-    label: '🥗 Salmon dinner for 4',
+    label: '⚡ Stream salmon dinner (Live SSE)',
     prompt:
       'Plan a Mediterranean salmon & quinoa dinner for 4 servings with scaled ingredients, nutrition breakdown, and one-click add to cart.',
     scenarioId: 'meal-planner',
   },
   {
     id: 'chip-protein-bowls',
-    label: '🥑 High-protein bowls',
+    label: '🥑 Stream high-protein bowls',
     prompt:
       'Build high-protein harvest chicken & avocado bowls for 4 servings using organic ingredients.',
     scenarioId: 'meal-planner',
   },
   {
     id: 'chip-cart-swaps',
-    label: '💰 Find savings in my cart',
+    label: '💰 Stream smart cart swaps',
     prompt:
       'Find smart budget savers, organic upgrades, and in-stock backups for the items in my cart.',
     scenarioId: 'cart-optimizer',
   },
   {
     id: 'chip-budget-weekly',
-    label: '📋 $120 weekly meal plan',
+    label: '📋 Stream $120 weekly plan',
     prompt:
       'Create a $120 weekly grocery plan focused on high-protein meals under 30 minutes of prep time.',
     scenarioId: 'budget-builder',
