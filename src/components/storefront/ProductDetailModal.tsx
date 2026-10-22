@@ -96,15 +96,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-detail-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-stone-950/60 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-stone-950/55 backdrop-blur-xs overflow-y-auto"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden my-auto max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-stone-200/80 overflow-hidden my-auto max-h-[90vh] flex flex-col"
       >
         {/* Top bar */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#F7F5F0] border-b border-stone-200/80">
+        <div className="flex items-center justify-between px-6 py-4 bg-[#F7F5F0] border-b border-stone-200/70">
           <div className="flex items-center gap-2 text-xs font-semibold text-stone-600">
             <span>{categoryMeta.emoji}</span>
             <span>{categoryMeta.label}</span>
@@ -145,9 +145,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 )}
 
                 {product.stockStatus === 'low_stock' && (
-                  <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 shadow-xs">
+                  <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                    Low Stock · Smart Backup Configured
+                    Low Stock · Backup Available
                   </span>
                 )}
               </div>
@@ -187,13 +187,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {product.rating.toFixed(1)}
                   </span>
                   <span>({product.reviewCount.toLocaleString()} reviews)</span>
-                  <span aria-hidden="true">·</span>
-                  <span>SKU: {product.id}</span>
                 </div>
               </div>
 
               {/* Price box */}
-              <div className="flex items-baseline justify-between p-3.5 rounded-2xl bg-[#F7F5F0] border border-stone-200/80">
+              <div className="flex items-baseline justify-between p-4 rounded-2xl bg-[#F7F5F0] border border-stone-200/70">
                 <div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-extrabold text-stone-900">
@@ -216,24 +214,24 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => addItemToCart(product.id, 1)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0AAD0A] hover:bg-[#099409] text-white font-bold text-sm shadow-sm transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#0AAD0A] hover:bg-[#099409] text-white font-bold text-sm shadow-sm transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4 stroke-[2.5]" />
                     <span>Add to Cart</span>
                   </button>
                 ) : (
-                  <div className="inline-flex items-center gap-2 bg-[#0AAD0A] text-white rounded-xl p-1.5 shadow-sm">
+                  <div className="inline-flex items-center gap-2 bg-[#0AAD0A] text-white rounded-full p-1.5 shadow-sm">
                     <button
                       type="button"
                       onClick={() =>
                         updateItemQuantity(product.id, cartQuantity - 1)
                       }
                       aria-label="Decrease quantity"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black/15 cursor-pointer"
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/15 cursor-pointer"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
-                    <span className="min-w-8 text-center font-extrabold text-sm tabular-nums">
+                    <span className="min-w-8 text-center font-extrabold text-sm tabular-nums px-1">
                       {cartQuantity} in cart
                     </span>
                     <button
@@ -242,7 +240,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         updateItemQuantity(product.id, cartQuantity + 1)
                       }
                       aria-label="Increase quantity"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black/15 cursor-pointer"
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/15 cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -260,18 +258,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
                       <ArrowLeftRight className="w-3.5 h-3.5 text-[#0AAD0A]" />
-                      Shopper Substitution Preference
+                      If Out of Stock
                     </span>
                     <span className="text-[11px] font-medium text-emerald-700">
-                      Synced with Cart
+                      Saved to Cart
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     {(
                       [
                         { id: 'best_match', label: 'Best Match' },
-                        { id: 'specific_item', label: 'Specific Backup' },
-                        { id: 'do_not_substitute', label: 'Refund Only' },
+                        { id: 'specific_item', label: 'Pick Backup' },
+                        { id: 'do_not_substitute', label: 'Refund Item' },
                       ] as const
                     ).map((opt) => (
                       <button
@@ -286,7 +284,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               : undefined
                           )
                         }
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
                           currentSubPref === opt.id
                             ? 'bg-[#073E1E] text-white border-[#073E1E]'
                             : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
@@ -300,8 +298,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
 
               {/* Nutrition Facts Panel */}
-              <div className="rounded-2xl border border-stone-200 p-4 space-y-2.5 bg-white">
-                <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+              <div className="rounded-2xl border border-stone-200/80 p-4 space-y-2.5 bg-white">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
                     Nutrition Facts
                   </h3>
@@ -356,27 +354,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Cross-linked A2UI v1.0 Smart Swap Targets & Substitutes */}
+          {/* Recommended Alternatives & Upgrades */}
           {(optimizationLinks.organicUpgrade ||
             optimizationLinks.budgetAlternative ||
             optimizationLinks.backup ||
             substitutes.length > 0) && (
-            <div className="pt-4 border-t border-stone-200 space-y-3">
+            <div className="pt-4 border-t border-stone-100 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-stone-900 flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-[#0AAD0A]" />
-                  <span>Smart Alternatives &amp; A2UI v1.0 Swap Targets</span>
+                  <span>Recommended Alternatives &amp; Upgrades</span>
                 </h3>
                 <span className="text-xs text-stone-500">
-                  Cross-linked SKUs for instant cart substitution
+                  Hand-picked options for instant swaps or backups
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {optimizationLinks.organicUpgrade && (
-                  <div className="p-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 flex flex-col justify-between gap-2">
+                  <div className="p-3.5 rounded-2xl border border-emerald-200/80 bg-emerald-50/40 flex flex-col justify-between gap-2.5">
                     <div>
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-700 text-white mb-1">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-700 text-white mb-1">
                         Organic Upgrade
                       </span>
                       <p className="text-xs font-bold text-stone-900 line-clamp-1">
@@ -394,20 +392,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           optimizationLinks.organicUpgrade!
                         )
                       }
-                      className="w-full py-1.5 px-3 rounded-lg bg-[#0AAD0A] hover:bg-[#099409] text-white text-xs font-bold transition-colors cursor-pointer"
+                      className="w-full py-2 px-3 rounded-xl bg-[#0AAD0A] hover:bg-[#099409] text-white text-xs font-bold transition-colors cursor-pointer"
                     >
                       {cartQuantity > 0
-                        ? 'Swap in Cart to Organic'
-                        : 'Add Organic Upgrade'}
+                        ? 'Switch to Organic'
+                        : 'Add Organic Option'}
                     </button>
                   </div>
                 )}
 
                 {optimizationLinks.budgetAlternative && (
-                  <div className="p-3 rounded-2xl border border-sky-200 bg-sky-50/40 flex flex-col justify-between gap-2">
+                  <div className="p-3.5 rounded-2xl border border-sky-200/80 bg-sky-50/40 flex flex-col justify-between gap-2.5">
                     <div>
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-700 text-white mb-1">
-                        Budget Saver
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-sky-700 text-white mb-1">
+                        Value Pick
                       </span>
                       <p className="text-xs font-bold text-stone-900 line-clamp-1">
                         {optimizationLinks.budgetAlternative.name}
@@ -429,20 +427,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           optimizationLinks.budgetAlternative!
                         )
                       }
-                      className="w-full py-1.5 px-3 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold transition-colors cursor-pointer"
+                      className="w-full py-2 px-3 rounded-xl bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold transition-colors cursor-pointer"
                     >
                       {cartQuantity > 0
-                        ? 'Swap for Budget Saver'
-                        : 'Add Budget Saver'}
+                        ? 'Switch & Save'
+                        : 'Add Value Option'}
                     </button>
                   </div>
                 )}
 
                 {optimizationLinks.backup && (
-                  <div className="p-3 rounded-2xl border border-amber-200 bg-amber-50/40 flex flex-col justify-between gap-2">
+                  <div className="p-3.5 rounded-2xl border border-amber-200/80 bg-amber-50/40 flex flex-col justify-between gap-2.5">
                     <div>
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-600 text-white mb-1">
-                        Recommended Backup
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-600 text-white mb-1">
+                        Suggested Backup
                       </span>
                       <p className="text-xs font-bold text-stone-900 line-clamp-1">
                         {optimizationLinks.backup.name}
@@ -465,13 +463,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           handleInspectProduct(optimizationLinks.backup!);
                         }
                       }}
-                      className="w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                      className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>
                         {cartQuantity > 0
-                          ? 'Set as Backup SKU'
-                          : 'View Backup Item'}
+                          ? 'Save as Backup'
+                          : 'View Option'}
                       </span>
                     </button>
                   </div>

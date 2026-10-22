@@ -18,8 +18,8 @@ export const STORES: Store[] = [
     featuredPromoBanner: {
       title: 'Farm-to-Table Organic Harvest & Chef Meal Bundles',
       subtitle:
-        'Scale recipes dynamically, toggle organic or gluten-free swaps, and add complete dinner bundles in one click with our A2UI v1.0 AI Personal Shopper.',
-      badgeText: 'FREE Delivery on $35+ · A2UI v1.0 Live',
+        'Scale recipes for your family, explore organic or gluten-free swaps, and add complete dinner ingredients in one click with your AI Personal Shopper.',
+      badgeText: 'Free Delivery on $35+ · Seasonal Harvest',
       ctaText: 'Plan Dinner with AI Shopper',
       linkedScenarioId: 'meal-planner',
     },
@@ -37,11 +37,11 @@ export const STORES: Store[] = [
     rating: 4.8,
     reviewCount: 9150,
     featuredPromoBanner: {
-      title: 'Stock Up with Club-Size Value & Weekly Macro Planning',
+      title: 'Stock Up with Club-Size Value & Weekly Meal Planning',
       subtitle:
-        'Set your household weekly budget and protein targets in the interactive A2UI v1.0 Budget & Nutrition Builder with live validation rules.',
-      badgeText: 'Member Pricing · Free Delivery $75+',
-      ctaText: 'Build Weekly Bulk Budget',
+        'Set your weekly grocery budget and nutrition goals to build a tailored family basket in seconds.',
+      badgeText: 'Member Pricing · Free Delivery on $75+',
+      ctaText: 'Build a Weekly Plan',
       linkedScenarioId: 'budget-builder',
     },
   },
@@ -58,11 +58,11 @@ export const STORES: Store[] = [
     rating: 4.8,
     reviewCount: 3410,
     featuredPromoBanner: {
-      title: 'Clean Ingredients, Keto Staples & Smart Cart Swaps',
+      title: 'Clean Ingredients, Keto Staples & Smart Cart Savings',
       subtitle:
-        'Let the A2UI v1.0 Smart Cart Optimizer inspect your current basket for organic upgrades, budget savers, and low-stock backup protection.',
-      badgeText: 'Vitamin & Specialty Event · Save up to 25%',
-      ctaText: 'Optimize Cart Nutrition & Swaps',
+        'Discover organic upgrades, lower-priced alternatives, and in-stock backups tailored to your basket.',
+      badgeText: 'Wellness & Specialty Event · Save up to 25%',
+      ctaText: 'Find Cart Savings',
       linkedScenarioId: 'cart-optimizer',
     },
   },
@@ -81,9 +81,9 @@ export const STORES: Store[] = [
     featuredPromoBanner: {
       title: 'Small-Batch Favorites & 20-Minute Weeknight Feasts',
       subtitle:
-        'Explore cult-favorite frozen meals, Everything Ciabatta, and Chili Onion Crunch or launch the A2UI v1.0 Meal Planner.',
+        'Explore customer-favorite frozen meals, Everything Ciabatta, and Chili Onion Crunch, or plan quick weeknight dinners with AI.',
       badgeText: 'New Seasonal Arrivals · $2.99 Delivery',
-      ctaText: 'Plan 20-Min Meal Prep',
+      ctaText: 'Plan 20-Min Dinners',
       linkedScenarioId: 'meal-planner',
     },
   },

@@ -10,8 +10,6 @@ import {
   Camera,
   Check,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   CreditCard,
   Download,
@@ -20,7 +18,6 @@ import {
   Eye,
   EyeOff,
   FastForward,
-  FileText,
   Flame,
   Folder,
   Heart,
@@ -119,15 +116,15 @@ export const ValidationFeedbackList: React.FC<{
   }
 
   return (
-    <div className={compact ? 'mt-1 space-y-0.5' : 'mt-1.5 space-y-1'}>
+    <div className={compact ? 'mt-1.5 space-y-1' : 'mt-2 space-y-1.5'}>
       {validationState.failedItems.map((item, idx) => {
         const isError = item.severity === 'error';
         const isWarning = item.severity === 'warning';
         const colorClasses = isError
-          ? 'text-rose-600 bg-rose-50/80 border-rose-200/80'
+          ? 'text-rose-700 bg-rose-50/90 border-rose-200/80'
           : isWarning
-            ? 'text-amber-700 bg-amber-50/80 border-amber-200/80'
-            : 'text-sky-700 bg-sky-50/80 border-sky-200/80';
+            ? 'text-amber-800 bg-amber-50/90 border-amber-200/80'
+            : 'text-sky-800 bg-sky-50/90 border-sky-200/80';
 
         const IconComponent = isError
           ? AlertCircle
@@ -139,7 +136,7 @@ export const ValidationFeedbackList: React.FC<{
           <div
             key={`${item.code ?? 'chk'}-${idx}`}
             role={isError ? 'alert' : 'status'}
-            className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${colorClasses}`}
+            className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium ${colorClasses}`}
           >
             <IconComponent className="h-3.5 w-3.5 shrink-0" />
             <span>{item.message}</span>
@@ -151,7 +148,7 @@ export const ValidationFeedbackList: React.FC<{
 };
 
 /**
- * Lightweight inline Markdown parser for A2UI v1.0 `Text` component:
+ * Lightweight inline Markdown parser for `Text` component:
  * supports `**bold**`, `*italic*`, `` `code` ``, and safe `[label](https://...)` links.
  */
 function renderInlineMarkdown(text: string): React.ReactNode[] {
@@ -162,7 +159,7 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
   return parts.map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
       return (
-        <strong key={index} className="font-semibold text-slate-900">
+        <strong key={index} className="font-semibold text-stone-900">
           {part.slice(2, -2)}
         </strong>
       );
@@ -176,15 +173,17 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
     }
     if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
       return (
-        <code
+        <span
           key={index}
-          className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-emerald-800"
+          className="rounded-md bg-stone-100 px-1.5 py-0.5 text-[0.9em] font-medium text-emerald-800"
         >
           {part.slice(1, -1)}
-        </code>
+        </span>
       );
     }
-    const linkMatch = part.match(/^\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^)]+)\)$/);
+    const linkMatch = part.match(
+      /^\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^)]+)\)$/
+    );
     if (linkMatch) {
       return (
         <a
@@ -192,7 +191,7 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
           href={linkMatch[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-0.5 font-medium text-emerald-700 underline decoration-emerald-400 underline-offset-2 hover:text-emerald-800"
+          className="inline-flex items-center gap-0.5 font-medium text-[#0AAD0A] underline decoration-emerald-400 underline-offset-2 hover:text-[#089408]"
         >
           {linkMatch[1]}
           <ExternalLink className="h-3 w-3" />
@@ -204,7 +203,7 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
 }
 
 /**
- * Maps A2UI v1.0 Basic Catalog icon names (`catalog.json`) + grocery icon aliases to Lucide icons.
+ * Maps Basic Catalog icon names + grocery icon aliases to Lucide icons.
  */
 export function renderA2UIIconByName(
   iconName: string,
@@ -349,10 +348,10 @@ export function renderA2UIIconByName(
 
 /**
  * 1. Text Component (`Text`)
- * Supports v1.0 `variant: 'caption' | 'body'`, Markdown `#`/`##`/`###` headings,
- * and compatibility `usageHint` / heading variants (`h1`..`h5`).
  */
-const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext } = ctx;
   const rawText = resolveDynamicString(
     component.text ?? component.label ?? '',
@@ -363,56 +362,59 @@ const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
     component.variant ?? component.usageHint ?? 'body'
   ).trim();
 
-  // Detect leading Markdown heading syntax per v1.0 catalog.json
   const headingMatch = rawText.match(/^(#{1,4})\s+([\s\S]*)$/);
   const headingLevel = headingMatch ? headingMatch[1].length : 0;
   const cleanText = headingMatch ? headingMatch[2] : rawText;
 
   if (headingLevel === 1 || variant === 'h1') {
     return (
-      <h2 className="text-lg font-bold tracking-tight text-slate-900">
+      <h2 className="text-lg font-bold tracking-tight text-stone-900">
         {renderInlineMarkdown(cleanText)}
       </h2>
     );
   }
   if (headingLevel === 2 || variant === 'h2') {
     return (
-      <h3 className="text-base font-bold tracking-tight text-slate-900">
+      <h3 className="text-base font-bold tracking-tight text-stone-900">
         {renderInlineMarkdown(cleanText)}
       </h3>
     );
   }
   if (headingLevel === 3 || variant === 'h3') {
     return (
-      <h4 className="text-sm font-semibold text-slate-800">
+      <h4 className="text-sm font-semibold text-stone-800">
         {renderInlineMarkdown(cleanText)}
       </h4>
     );
   }
   if (headingLevel === 4 || variant === 'h4' || variant === 'h5') {
     return (
-      <h5 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+      <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-500">
         {renderInlineMarkdown(cleanText)}
       </h5>
     );
   }
   if (variant === 'caption') {
     return (
-      <p className="text-xs leading-relaxed text-slate-500">
+      <p className="text-xs leading-relaxed text-stone-500">
         {renderInlineMarkdown(cleanText)}
       </p>
     );
   }
 
-  // Multi-line or bullet list support in body text
   const lines = cleanText.split('\n');
   const isBulletList =
     lines.length > 1 &&
-    lines.every((l) => l.trim().startsWith('- ') || l.trim().startsWith('* ') || l.trim() === '');
+    lines.every(
+      (l) =>
+        l.trim().startsWith('- ') ||
+        l.trim().startsWith('* ') ||
+        l.trim() === ''
+    );
 
   if (isBulletList) {
     return (
-      <ul className="list-disc space-y-1 pl-4 text-sm text-slate-700">
+      <ul className="list-disc space-y-1 pl-4 text-sm text-stone-700">
         {lines
           .filter((l) => l.trim().length > 0)
           .map((line, i) => (
@@ -425,7 +427,7 @@ const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
   }
 
   return (
-    <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-line">
+    <p className="text-sm leading-relaxed text-stone-700 whitespace-pre-line">
       {renderInlineMarkdown(cleanText)}
     </p>
   );
@@ -434,15 +436,21 @@ const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
 /**
  * 2. Image Component (`Image`)
  */
-const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext } = ctx;
   const [hasError, setHasError] = useState(false);
 
-  const url = resolveDynamicString(component.url ?? component.src, evalContext, '');
-  const alt = resolveDynamicString(
-    component.alt ?? component.accessibility?.label ?? 'Surface image',
+  const url = resolveDynamicString(
+    component.url ?? component.src,
     evalContext,
-    'Surface image'
+    ''
+  );
+  const alt = resolveDynamicString(
+    component.alt ?? component.accessibility?.label ?? 'Product image',
+    evalContext,
+    'Product image'
   );
   const fit = String(component.fit ?? 'cover');
   const variant = String(component.variant ?? 'mediumFeature');
@@ -459,12 +467,12 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =
             : 'object-cover';
 
   const variantClasses: Record<string, string> = {
-    icon: 'h-8 w-8 rounded-lg',
+    icon: 'h-9 w-9 rounded-xl',
     avatar: 'h-11 w-11 rounded-full',
-    smallFeature: 'h-20 w-20 rounded-xl',
-    mediumFeature: 'h-36 w-full rounded-xl',
+    smallFeature: 'h-20 w-20 rounded-2xl',
+    mediumFeature: 'h-36 w-full rounded-2xl',
     largeFeature: 'h-48 w-full rounded-2xl',
-    header: 'h-32 w-full rounded-xl',
+    header: 'h-32 w-full rounded-2xl',
   };
 
   const sizeClass = variantClasses[variant] ?? variantClasses.mediumFeature;
@@ -472,7 +480,7 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =
   if (!url || hasError) {
     return (
       <div
-        className={`flex items-center justify-center bg-slate-100 text-slate-400 border border-slate-200/70 ${sizeClass}`}
+        className={`flex items-center justify-center bg-stone-100 text-stone-400 border border-stone-200/70 ${sizeClass}`}
       >
         <ImageIcon className="h-5 w-5" />
       </div>
@@ -484,7 +492,7 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =
       src={url}
       alt={alt}
       onError={() => setHasError(true)}
-      className={`bg-slate-100 border border-slate-200/60 ${fitClass} ${sizeClass}`}
+      className={`bg-stone-100 border border-stone-200/60 ${fitClass} ${sizeClass}`}
       loading="lazy"
     />
   );
@@ -493,9 +501,14 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =
 /**
  * 3. Icon Component (`Icon`)
  */
-const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext } = ctx;
-  const rawName = evaluateDynamicValue(component.name ?? component.icon, evalContext);
+  const rawName = evaluateDynamicValue(
+    component.name ?? component.icon,
+    evalContext
+  );
 
   if (
     typeof rawName === 'object' &&
@@ -504,7 +517,7 @@ const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
     typeof (rawName as Record<string, unknown>).path === 'string'
   ) {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]">
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
           <path d={(rawName as { path: string }).path} />
         </svg>
@@ -514,7 +527,7 @@ const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
 
   const iconName = typeof rawName === 'string' ? rawName : 'sparkles';
   return (
-    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50/90 text-emerald-700">
+    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]">
       {renderA2UIIconByName(iconName, 'h-4 w-4')}
     </span>
   );
@@ -523,13 +536,15 @@ const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
 /**
  * 4. Video Component (`Video`)
  */
-const A2UIVideoComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UIVideoComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext } = ctx;
   const url = resolveDynamicString(component.url, evalContext, '');
   const poster = resolveDynamicString(component.poster, evalContext, '');
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-950 shadow-xs">
       {url ? (
         <video
           src={url}
@@ -539,9 +554,9 @@ const A2UIVideoComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =
           className="max-h-56 w-full object-cover"
         />
       ) : (
-        <div className="flex h-36 items-center justify-center gap-2 text-xs text-slate-400">
+        <div className="flex h-36 items-center justify-center gap-2 text-xs text-stone-400">
           <Play className="h-4 w-4" />
-          <span>Video stream unavailable</span>
+          <span>Video preview unavailable</span>
         </div>
       )}
     </div>
@@ -559,19 +574,19 @@ const A2UIAudioPlayerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const description = resolveDynamicString(
     component.description ?? component.label,
     evalContext,
-    'Audio clip'
+    'Audio guide'
   );
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-        <Volume2 className="h-4 w-4 text-emerald-600" />
+    <div className="flex flex-col gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 p-3.5">
+      <div className="flex items-center gap-2 text-xs font-medium text-stone-700">
+        <Volume2 className="h-4 w-4 text-[#0AAD0A]" />
         <span>{description}</span>
       </div>
       {url ? (
         <audio src={url} controls preload="metadata" className="h-8 w-full" />
       ) : (
-        <span className="text-xs text-slate-400">No audio URL provided</span>
+        <span className="text-xs text-stone-400">No audio clip available</span>
       )}
     </div>
   );
@@ -580,7 +595,9 @@ const A2UIAudioPlayerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 /**
  * 6. Row Component (`Row`)
  */
-const A2UIRowComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UIRowComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext, renderChildList } = ctx;
   const justify = String(
     component.justify ?? component.justifyContent ?? 'start'
@@ -661,7 +678,9 @@ const A2UIColumnComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 /**
  * 8. List Component (`List`)
  */
-const A2UIListComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UIListComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext, renderChildList } = ctx;
   const direction = String(component.direction ?? 'vertical');
   const align = String(component.align ?? 'stretch');
@@ -698,9 +717,10 @@ const A2UIListComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
 
 /**
  * 9. Card Component (`Card`)
- * Supports canonical v1.0 `child: ComponentId` AND scenario convenience `children: A2UIChildList`.
  */
-const A2UICardComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UICardComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext, renderChildNode, renderChildList } = ctx;
   const title = resolveDynamicString(component.title, evalContext, '');
   const subtitle = resolveDynamicString(component.subtitle, evalContext, '');
@@ -709,25 +729,25 @@ const A2UICardComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
 
   const variantClasses =
     variant === 'highlighted' || variant === 'emerald'
-      ? 'border-emerald-200 bg-gradient-to-br from-emerald-50/60 via-white to-white shadow-sm'
+      ? 'border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 via-white to-white shadow-xs'
       : variant === 'subtle'
-        ? 'border-slate-200/80 bg-slate-50/70'
-        : 'border-slate-200/90 bg-white shadow-sm';
+        ? 'border-stone-200/70 bg-stone-50/70'
+        : 'border-stone-200/80 bg-white shadow-xs';
 
   return (
-    <div className={`rounded-2xl border p-4 transition-all ${variantClasses}`}>
+    <div className={`rounded-2xl border p-4 sm:p-5 transition-all ${variantClasses}`}>
       {(title || subtitle || badge) && (
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
             {title && (
-              <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+              <h3 className="text-sm font-bold text-stone-900">{title}</h3>
             )}
             {subtitle && (
-              <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
+              <p className="mt-0.5 text-xs text-stone-500">{subtitle}</p>
             )}
           </div>
           {badge && (
-            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
               {badge}
             </span>
           )}
@@ -745,7 +765,9 @@ const A2UICardComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
 /**
  * 10. Tabs Component (`Tabs`)
  */
-const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext, renderChildNode } = ctx;
   const rawTabs = Array.isArray(component.tabs)
     ? component.tabs
@@ -766,17 +788,17 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
     typeof currentTab?.child === 'string' ? currentTab.child : '';
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3.5">
       <div
         role="tablist"
-        className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1"
+        className="flex flex-wrap gap-1 rounded-2xl bg-stone-100/90 p-1"
       >
         {rawTabs.map((tabItem, idx) => {
           const itemObj = tabItem as Record<string, unknown>;
           const tabTitle = resolveDynamicString(
             itemObj.title ?? itemObj.label,
             evalContext,
-            `Tab ${idx + 1}`
+            `Option ${idx + 1}`
           );
           const isSelected = idx === safeIndex;
           return (
@@ -786,10 +808,10 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
               role="tab"
               aria-selected={isSelected}
               onClick={() => setActiveIndex(idx)}
-              className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-white text-emerald-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-[#0AAD0A] shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               {tabTitle}
@@ -806,10 +828,10 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =>
 
 /**
  * 11. Modal Component (`Modal`)
- * Supports v1.0 `trigger: ComponentId` & `content: ComponentId`
- * (plus aliases `entryPointChild` and `contentChild`).
  */
-const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) => {
+const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
   const { component, evalContext, renderChildNode } = ctx;
   const [isOpen, setIsOpen] = useState(false);
 
@@ -836,9 +858,9 @@ const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =
         ) : (
           <button
             type="button"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
           >
-            Open {modalTitle}
+            View {modalTitle}
           </button>
         )}
       </div>
@@ -848,25 +870,29 @@ const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({ ctx }) =
           role="dialog"
           aria-modal="true"
           aria-label={modalTitle}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 p-4 backdrop-blur-xs"
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
+            className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h3 className="text-sm font-bold text-slate-900">{modalTitle}</h3>
+            <div className="mb-4 flex items-center justify-between border-b border-stone-100 pb-3">
+              <h3 className="text-base font-bold text-stone-900">
+                {modalTitle}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 cursor-pointer"
                 aria-label="Close modal"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div>{contentId ? renderChildNode(contentId, evalContext) : null}</div>
+            <div>
+              {contentId ? renderChildNode(contentId, evalContext) : null}
+            </div>
           </div>
         </div>
       )}
@@ -882,15 +908,18 @@ const A2UIDividerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 }) => {
   const axis = String(ctx.component.axis ?? 'horizontal');
   if (axis === 'vertical') {
-    return <div role="separator" className="mx-1 h-auto w-px self-stretch bg-slate-200" />;
+    return (
+      <div
+        role="separator"
+        className="mx-1.5 h-auto w-px self-stretch bg-stone-200/80"
+      />
+    );
   }
-  return <hr className="my-1.5 border-0 border-t border-slate-200/80" />;
+  return <hr className="my-2 border-0 border-t border-stone-200/70" />;
 };
 
 /**
  * 13. Button Component (`Button`)
- * Supports v1.0 `child: ComponentId` AND shorthand `label: DynamicString`.
- * Evaluates `checks` (`validationState`) and blocks action dispatch when checks fail.
  */
 const A2UIButtonComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
@@ -921,13 +950,13 @@ const A2UIButtonComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
   const variantClasses: Record<string, string> = {
     primary:
-      'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-xs border border-emerald-600',
+      'bg-[#0AAD0A] text-white hover:bg-[#089408] active:bg-[#077d07] shadow-xs border border-[#0AAD0A]',
     default:
-      'bg-white text-slate-800 hover:bg-slate-50 active:bg-slate-100 border border-slate-200 shadow-2xs',
+      'bg-white text-stone-800 hover:bg-stone-50 active:bg-stone-100 border border-stone-200/90 shadow-2xs',
     secondary:
-      'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/80',
+      'bg-emerald-50/90 text-emerald-800 hover:bg-emerald-100/80 border border-emerald-200/80',
     borderless:
-      'bg-transparent text-emerald-700 hover:bg-emerald-50/70 border border-transparent',
+      'bg-transparent text-[#0AAD0A] hover:bg-emerald-50/60 border border-transparent',
     danger:
       'bg-rose-600 text-white hover:bg-rose-700 border border-rose-600 shadow-xs',
   };
@@ -955,8 +984,10 @@ const A2UIButtonComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
             : undefined
         }
         onClick={handleClick}
-        className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${baseStyle} ${
-          isDisabled ? 'cursor-not-allowed opacity-55 saturate-50' : 'cursor-pointer'
+        className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/25 ${baseStyle} ${
+          isDisabled
+            ? 'cursor-not-allowed opacity-50 saturate-50'
+            : 'cursor-pointer'
         }`}
       >
         {iconName ? renderA2UIIconByName(iconName, 'h-3.5 w-3.5') : null}
@@ -975,7 +1006,6 @@ const A2UIButtonComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
 /**
  * 14. TextField Component (`TextField`)
- * Two-way bound via `{"@path": "/..."}` and evaluates `checks` on every keystroke.
  */
 const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
@@ -1038,12 +1068,12 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20'
     : validationState.hasWarnings
       ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/20'
-      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 bg-white';
+      : 'border-stone-200 focus:border-[#0AAD0A] focus:ring-[#0AAD0A]/20 bg-white';
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-semibold text-slate-700">{label}</label>
+        <label className="text-xs font-semibold text-stone-700">{label}</label>
       )}
       {variant === 'longText' ? (
         <textarea
@@ -1052,7 +1082,7 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
           placeholder={placeholder}
           aria-invalid={validationState.hasErrors}
           onChange={handleChange}
-          className={`w-full rounded-xl border px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${borderClass}`}
+          className={`w-full rounded-2xl border px-3.5 py-2.5 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 ${borderClass}`}
         />
       ) : (
         <input
@@ -1070,11 +1100,11 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
           aria-invalid={validationState.hasErrors}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          className={`w-full rounded-xl border px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${borderClass}`}
+          className={`w-full rounded-2xl border px-3.5 py-2.5 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 ${borderClass}`}
         />
       )}
       {helperText && validationState.failedItems.length === 0 && (
-        <span className="text-[11px] text-slate-500">{helperText}</span>
+        <span className="text-[11px] text-stone-500">{helperText}</span>
       )}
       <ValidationFeedbackList validationState={validationState} />
     </div>
@@ -1083,7 +1113,6 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
 /**
  * 15. CheckBox Component (`CheckBox`)
- * Two-way bound boolean toggle (`value: {"@path": "..."}`).
  */
 const A2UICheckBoxComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
@@ -1121,23 +1150,23 @@ const A2UICheckBoxComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
   return (
     <div className="flex flex-col">
-      <label className="group flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 transition-colors hover:border-emerald-300 hover:bg-emerald-50/30">
+      <label className="group flex cursor-pointer items-start gap-2.5 rounded-2xl border border-stone-200/80 bg-white px-3.5 py-2.5 transition-all hover:border-emerald-300 hover:bg-emerald-50/20">
         <input
           type="checkbox"
           checked={checked}
           onChange={handleToggle}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+          className="mt-0.5 h-4 w-4 rounded border-stone-300 accent-[#0AAD0A] focus:ring-[#0AAD0A]"
         />
         <div className="flex flex-col">
           <span
             className={`text-xs font-medium ${
-              checked ? 'text-slate-900' : 'text-slate-700'
+              checked ? 'text-stone-900 font-semibold' : 'text-stone-700'
             }`}
           >
             {label}
           </span>
           {description && (
-            <span className="text-[11px] text-slate-500">{description}</span>
+            <span className="text-[11px] text-stone-500">{description}</span>
           )}
         </div>
       </label>
@@ -1148,8 +1177,6 @@ const A2UICheckBoxComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
 /**
  * 16. ChoicePicker Component (`ChoicePicker`)
- * Supports v1.0 `variant: 'mutuallyExclusive' | 'multipleSelection'`,
- * `displayStyle: 'checkbox' | 'chips'`, `filterable?: boolean`, and two-way `@path` binding.
  */
 const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
@@ -1165,8 +1192,7 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
   const label = resolveDynamicString(component.label, evalContext, '');
   const variant = String(component.variant ?? 'mutuallyExclusive');
-  const isMulti =
-    variant === 'multipleSelection' || variant === 'multi';
+  const isMulti = variant === 'multipleSelection' || variant === 'multi';
   const displayStyle = String(component.displayStyle ?? 'chips');
   const filterable = Boolean(component.filterable ?? false);
 
@@ -1212,8 +1238,6 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
         : [...selectedValues, optionValue];
       updateDataModelPath(writablePath, nextList);
     } else {
-      // If existing value at path is a string scalar, write string scalar;
-      // otherwise write v1.0 canonical single-element string[] array.
       if (typeof rawExisting === 'string') {
         updateDataModelPath(writablePath, optionValue);
       } else {
@@ -1231,12 +1255,12 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {label && (
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-slate-700">{label}</label>
+          <label className="text-xs font-semibold text-stone-700">{label}</label>
           {isMulti && (
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-stone-400">
               {selectedValues.length} selected
             </span>
           )}
@@ -1245,13 +1269,13 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
       {filterable && resolvedOptions.length > 4 && (
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
           <input
             type="text"
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
             placeholder="Filter options..."
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-2.5 text-xs text-slate-700 focus:border-emerald-500 focus:bg-white focus:outline-none"
+            className="w-full rounded-xl border border-stone-200 bg-stone-50 py-1.5 pl-8 pr-3 text-xs text-stone-700 focus:border-[#0AAD0A] focus:bg-white focus:outline-none"
           />
         </div>
       )}
@@ -1265,16 +1289,16 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
                 key={opt.value}
                 type="button"
                 onClick={() => handleSelectOption(opt.value)}
-                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-xs transition-all ${
+                className={`flex w-full items-center justify-between rounded-2xl border px-3.5 py-2.5 text-left text-xs transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-emerald-500 bg-emerald-50/70 font-semibold text-emerald-900'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                    ? 'border-[#0AAD0A] bg-emerald-50/60 font-semibold text-stone-900'
+                    : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
                 }`}
               >
                 <div>
                   <div>{opt.label}</div>
                   {opt.description && (
-                    <div className="text-[11px] font-normal text-slate-500">
+                    <div className="text-[11px] font-normal text-stone-500">
                       {opt.description}
                     </div>
                   )}
@@ -1282,8 +1306,8 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
                 <span
                   className={`flex h-4 w-4 items-center justify-center rounded-full border ${
                     isSelected
-                      ? 'border-emerald-600 bg-emerald-600 text-white'
-                      : 'border-slate-300'
+                      ? 'border-[#0AAD0A] bg-[#0AAD0A] text-white'
+                      : 'border-stone-300'
                   }`}
                 >
                   {isSelected && <Check className="h-2.5 w-2.5" />}
@@ -1301,10 +1325,10 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
                 key={opt.value}
                 type="button"
                 onClick={() => handleSelectOption(opt.value)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40'
+                    ? 'border-[#0AAD0A] bg-[#0AAD0A] text-white shadow-2xs'
+                    : 'border-stone-200 bg-white text-stone-700 hover:border-emerald-300 hover:bg-emerald-50/40'
                 }`}
               >
                 {isSelected && <CheckCircle2 className="h-3.5 w-3.5" />}
@@ -1322,7 +1346,6 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
 /**
  * 17. Slider Component (`Slider`)
- * Two-way bound numeric range input (`min`, `max`, `step`, `value: {"@path": "..."}`).
  */
 const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
@@ -1333,7 +1356,11 @@ const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const min = resolveDynamicNumber(component.min, evalContext, 0);
   const max = resolveDynamicNumber(component.max, evalContext, 100);
   const step = resolveDynamicNumber(component.step, evalContext, 1);
-  const unit = resolveDynamicString(component.unit ?? component.prefix, evalContext, '');
+  const unit = resolveDynamicString(
+    component.unit ?? component.prefix,
+    evalContext,
+    ''
+  );
   const suffix = resolveDynamicString(component.suffix, evalContext, '');
 
   const currentValue = resolveDynamicNumber(component.value, evalContext, min);
@@ -1352,12 +1379,12 @@ const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
       : `${unit}${currentValue}${suffix ? ` ${suffix}` : ''}`;
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3">
+    <div className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-stone-50/70 p-3.5">
       <div className="flex items-center justify-between gap-2">
         {label && (
-          <label className="text-xs font-semibold text-slate-700">{label}</label>
+          <label className="text-xs font-semibold text-stone-700">{label}</label>
         )}
-        <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-mono text-xs font-bold text-emerald-800">
+        <span className="rounded-full bg-emerald-100/90 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
           {displayVal}
         </span>
       </div>
@@ -1368,11 +1395,15 @@ const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
         step={step}
         value={currentValue}
         onChange={handleSliderChange}
-        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-emerald-200 accent-emerald-600"
+        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-stone-200 accent-[#0AAD0A]"
       />
-      <div className="flex justify-between text-[10px] font-medium text-slate-400">
-        <span>{unit === '$' ? `$${min}` : `${min}${suffix ? ` ${suffix}` : ''}`}</span>
-        <span>{unit === '$' ? `$${max}` : `${max}${suffix ? ` ${suffix}` : ''}`}</span>
+      <div className="flex justify-between text-[11px] font-medium text-stone-400">
+        <span>
+          {unit === '$' ? `$${min}` : `${min}${suffix ? ` ${suffix}` : ''}`}
+        </span>
+        <span>
+          {unit === '$' ? `$${max}` : `${max}${suffix ? ` ${suffix}` : ''}`}
+        </span>
       </div>
       <ValidationFeedbackList validationState={validationState} />
     </div>
@@ -1410,7 +1441,6 @@ const A2UIDateTimeInputComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
         ? 'time'
         : 'date';
 
-  // Ensure ISO strings work smoothly in HTML5 date/time inputs
   const formattedInputValue = useMemo(() => {
     if (!currentValue) return '';
     if (inputType === 'date' && currentValue.includes('T')) {
@@ -1423,9 +1453,9 @@ const A2UIDateTimeInputComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   }, [currentValue, inputType]);
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-semibold text-slate-700">{label}</label>
+        <label className="text-xs font-semibold text-stone-700">{label}</label>
       )}
       <div className="relative">
         <input
@@ -1438,7 +1468,7 @@ const A2UIDateTimeInputComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
               updateDataModelPath(writablePath, e.target.value);
             }
           }}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          className="w-full rounded-2xl border border-stone-200 bg-white px-3.5 py-2.5 text-xs text-stone-800 focus:border-[#0AAD0A] focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/20"
         />
       </div>
       <ValidationFeedbackList validationState={validationState} />
@@ -1447,8 +1477,7 @@ const A2UIDateTimeInputComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 };
 
 /**
- * Dispatches any of the 18 A2UI v1.0 Basic Catalog components.
- * Returns `null` if the component type is not part of the Basic Catalog.
+ * Dispatches any of the 18 Basic Catalog components.
  */
 export function renderBasicCatalogComponent(
   ctx: A2UIRenderNodeContext

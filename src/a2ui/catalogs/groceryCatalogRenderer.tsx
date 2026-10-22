@@ -26,11 +26,9 @@ export interface GroceryCatalogExtraContext {
 
 /**
  * Custom Grocery Catalog Component 1: `ProductDealCard`
- * (`catalogId: "https://freshcart.app/catalogs/grocery/v1/catalog.json"`)
  *
- * Renders a rich grocery SKU deal / smart-swap card with live savings calculation,
- * optional original-vs-replacement comparison, image preview, dietary badges,
- * and one-click `A2UIAction` dispatch.
+ * Renders a consumer-friendly grocery deal / smart-swap card with live savings,
+ * optional original-vs-replacement comparison, image preview, and one-click action.
  */
 const A2UIProductDealCard: React.FC<{
   ctx: A2UIRenderNodeContext;
@@ -69,7 +67,7 @@ const A2UIProductDealCard: React.FC<{
   const badgeText = resolveDynamicString(
     component.badgeText ?? component.badge ?? component.category,
     evalContext,
-    'Smart Pick'
+    'Recommended'
   );
   const imageUrl = resolveDynamicString(
     component.imageUrl,
@@ -121,21 +119,21 @@ const A2UIProductDealCard: React.FC<{
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl border p-3.5 transition-all ${
+      className={`group relative overflow-hidden rounded-2xl border p-4 transition-all ${
         isApplied
-          ? 'border-emerald-400 bg-emerald-50/50 shadow-xs'
-          : 'border-emerald-200/80 bg-gradient-to-br from-white via-white to-emerald-50/30 shadow-xs hover:border-emerald-400 hover:shadow-md'
+          ? 'border-[#0AAD0A]/50 bg-emerald-50/40 shadow-xs'
+          : 'border-stone-200/90 bg-white shadow-xs hover:border-emerald-300 hover:shadow-md'
       }`}
     >
       {/* Top Deal Badge Bar */}
-      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-          <Tag className="h-3 w-3 text-emerald-600" />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+          <Tag className="h-3 w-3 text-[#0AAD0A]" />
           {badgeText}
         </span>
 
         {computedSavings > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/70 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
             <Sparkles className="h-3 w-3 text-amber-600" />
             Save ${computedSavings.toFixed(2)}
           </span>
@@ -143,51 +141,51 @@ const A2UIProductDealCard: React.FC<{
       </div>
 
       {/* Main Content Row */}
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3.5">
         {imageUrl && !imgError ? (
           <img
             src={imageUrl}
             alt={title}
             onError={() => setImgError(true)}
-            className="h-16 w-16 shrink-0 rounded-xl border border-slate-200/70 bg-slate-100 object-cover"
+            className="h-16 w-16 shrink-0 rounded-2xl border border-stone-200/70 bg-stone-100 object-cover"
             loading="lazy"
           />
         ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-emerald-200/70 bg-emerald-50 text-[#0AAD0A]">
             <Leaf className="h-6 w-6" />
           </div>
         )}
 
         <div className="min-w-0 flex-1">
           {originalName && (
-            <div className="mb-0.5 flex items-center gap-1 text-[11px] text-slate-400 line-through">
-              <ArrowRightLeft className="h-3 w-3 text-slate-400" />
-              <span className="truncate">Instead of: {originalName}</span>
+            <div className="mb-0.5 flex items-center gap-1 text-[11px] text-stone-400 line-through">
+              <ArrowRightLeft className="h-3 w-3 text-stone-400" />
+              <span className="truncate">Replaces: {originalName}</span>
             </div>
           )}
 
-          <h4 className="text-sm font-bold leading-snug text-slate-900">
+          <h4 className="text-sm font-bold leading-snug text-stone-900">
             {title}
           </h4>
 
           <div className="mt-1 flex flex-wrap items-baseline gap-2">
-            <span className="text-base font-extrabold text-emerald-700">
+            <span className="text-base font-extrabold text-[#0AAD0A]">
               ${price.toFixed(2)}
             </span>
             {originalPrice > price && (
-              <span className="text-xs font-medium text-slate-400 line-through">
+              <span className="text-xs font-medium text-stone-400 line-through">
                 ${originalPrice.toFixed(2)}
               </span>
             )}
             {unit && (
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-[11px] font-medium text-stone-500">
                 · {unit}
               </span>
             )}
           </div>
 
           {reasonText && (
-            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+            <p className="mt-1 text-xs leading-relaxed text-stone-600">
               {reasonText}
             </p>
           )}
@@ -196,15 +194,15 @@ const A2UIProductDealCard: React.FC<{
 
       {/* Action Footer */}
       {component.action !== undefined && (
-        <div className="mt-3 flex items-center justify-end border-t border-slate-100 pt-2.5">
+        <div className="mt-3.5 flex items-center justify-end border-t border-stone-100 pt-3">
           <button
             type="button"
             onClick={handleActionClick}
             disabled={!validationState.isValid}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
               isApplied
-                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                : 'bg-[#0AAD0A] text-white hover:bg-[#089408] shadow-xs'
             }`}
           >
             {isApplied ? (
@@ -229,10 +227,8 @@ const A2UIProductDealCard: React.FC<{
 
 /**
  * Custom Grocery Catalog Component 2: `NutritionSummary`
- * (`catalogId: "https://freshcart.app/catalogs/grocery/v1/catalog.json"`)
  *
- * Renders an interactive macro & calorie breakdown widget with proportion bars
- * for Protein, Carbs, Fat, and Fiber per serving.
+ * Renders a light, appetizing nutrition & macro breakdown card for recipes and meal plans.
  */
 const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
@@ -242,7 +238,7 @@ const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const title = resolveDynamicString(
     component.title ?? component.label,
     evalContext,
-    'Nutritional Macro Breakdown (Per Serving)'
+    'Nutrition per Serving'
   );
   const calories = resolveDynamicNumber(component.calories, evalContext, 550);
   const proteinGrams = resolveDynamicNumber(
@@ -282,36 +278,36 @@ const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   );
 
   return (
-    <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 p-4 text-white shadow-sm">
+    <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/70 via-white to-stone-50/60 p-4 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-300">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]">
             <Flame className="h-4 w-4" />
           </span>
           <div>
-            <h4 className="text-xs font-bold tracking-wide text-emerald-100 uppercase">
-              {title}
-            </h4>
-            <p className="text-[11px] text-emerald-300/80">
-              Scaled for {servings} {servings === 1 ? 'serving' : 'servings'} ·{' '}
-              {dailyPct}% of {dailyTarget} kcal daily target
+            <h4 className="text-xs font-bold text-stone-900">{title}</h4>
+            <p className="text-[11px] text-stone-500">
+              {servings} {servings === 1 ? 'serving' : 'servings'} · {dailyPct}%
+              of daily {dailyTarget} cal goal
             </p>
           </div>
         </div>
 
-        <div className="rounded-xl bg-white/10 px-3 py-1 text-right backdrop-blur-xs">
-          <span className="text-lg font-extrabold text-white">{calories}</span>
-          <span className="ml-1 text-[11px] font-medium text-emerald-200">
-            kcal / serving
+        <div className="rounded-xl bg-white border border-stone-200/80 px-3 py-1 text-right shadow-2xs">
+          <span className="text-base font-extrabold text-stone-900">
+            {calories}
+          </span>
+          <span className="ml-1 text-[11px] font-medium text-stone-500">
+            cal
           </span>
         </div>
       </div>
 
       {/* Stacked Macro Proportion Bar */}
-      <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-stone-200/70">
         <div
           style={{ width: `${proteinPct}%` }}
-          className="bg-emerald-400 transition-all duration-300"
+          className="bg-[#0AAD0A] transition-all duration-300"
           title={`Protein: ${proteinPct}%`}
         />
         <div
@@ -328,40 +324,42 @@ const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
       {/* 4 Macro Pill Cards */}
       <div className="mt-3 grid grid-cols-4 gap-2">
-        <div className="rounded-xl bg-white/10 px-2.5 py-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-300 uppercase">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+        <div className="rounded-xl border border-stone-200/70 bg-white px-2.5 py-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-500">
+            <span className="h-2 w-2 rounded-full bg-[#0AAD0A]" />
             Protein
           </div>
-          <div className="mt-0.5 text-sm font-bold text-white">
+          <div className="mt-0.5 text-sm font-bold text-stone-900">
             {proteinGrams}g
           </div>
         </div>
 
-        <div className="rounded-xl bg-white/10 px-2.5 py-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-300 uppercase">
+        <div className="rounded-xl border border-stone-200/70 bg-white px-2.5 py-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-500">
             <span className="h-2 w-2 rounded-full bg-amber-400" />
             Carbs
           </div>
-          <div className="mt-0.5 text-sm font-bold text-white">
+          <div className="mt-0.5 text-sm font-bold text-stone-900">
             {carbsGrams}g
           </div>
         </div>
 
-        <div className="rounded-xl bg-white/10 px-2.5 py-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-sky-300 uppercase">
+        <div className="rounded-xl border border-stone-200/70 bg-white px-2.5 py-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-500">
             <span className="h-2 w-2 rounded-full bg-sky-400" />
-            Healthy Fat
+            Fat
           </div>
-          <div className="mt-0.5 text-sm font-bold text-white">{fatGrams}g</div>
+          <div className="mt-0.5 text-sm font-bold text-stone-900">
+            {fatGrams}g
+          </div>
         </div>
 
-        <div className="rounded-xl bg-white/10 px-2.5 py-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-purple-300 uppercase">
-            <span className="h-2 w-2 rounded-full bg-purple-400" />
-            Dietary Fiber
+        <div className="rounded-xl border border-stone-200/70 bg-white px-2.5 py-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-500">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Fiber
           </div>
-          <div className="mt-0.5 text-sm font-bold text-white">
+          <div className="mt-0.5 text-sm font-bold text-stone-900">
             {fiberGrams}g
           </div>
         </div>

@@ -4,12 +4,8 @@ import {
   UtensilsCrossed,
   ArrowLeftRight,
   Wallet,
-  Play,
-  Zap,
   Send,
-  Bot,
   Loader2,
-  Cpu,
 } from 'lucide-react';
 
 export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
@@ -36,31 +32,31 @@ export interface QuickPromptChip {
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
   {
-    id: 'chip-salmon-6',
-    label: 'Salmon dinner for 6',
+    id: 'chip-salmon-4',
+    label: '🥗 Salmon dinner for 4',
     prompt:
-      'Create an interactive A2UI v1.0 Meal Planner surface for a Mediterranean salmon & quinoa dinner for 6 servings with a servings slider, organic checkbox, nutrition summary, and recipe-to-cart action.',
+      'Plan a Mediterranean salmon & quinoa dinner for 4 servings with scaled ingredients, nutrition breakdown, and one-click add to cart.',
     scenarioId: 'meal-planner',
   },
   {
-    id: 'chip-protein-org',
-    label: '100% Organic Protein Bowls',
+    id: 'chip-protein-bowls',
+    label: '🥑 High-protein bowls',
     prompt:
-      'Build a High-Protein Chicken & Avocado Power Bowls A2UI v1.0 surface for 4 servings using 100% USDA organic store SKUs, nutrition summary, and 1-click bundle add.',
+      'Build high-protein harvest chicken & avocado bowls for 4 servings using organic ingredients.',
     scenarioId: 'meal-planner',
   },
   {
     id: 'chip-cart-swaps',
-    label: 'AI Cart Swaps & Savings',
+    label: '💰 Find savings in my cart',
     prompt:
-      'Analyze my live cart items and generate an A2UI v1.0 Smart Cart Optimizer surface with ProductDealCard swaps for budget savings, organic upgrades, and low-stock backups.',
+      'Find smart budget savers, organic upgrades, and in-stock backups for the items in my cart.',
     scenarioId: 'cart-optimizer',
   },
   {
-    id: 'chip-budget-tight',
-    label: '$110 Weekly Macro Planner',
+    id: 'chip-budget-weekly',
+    label: '📋 $120 weekly meal plan',
     prompt:
-      'Create an interactive A2UI v1.0 Weekly Budget & Macro Planner surface with a $110 weekly budget slider, household goals ChoicePicker, prep time TextField with numeric checks, and curated high-protein grocery basket.',
+      'Create a $120 weekly grocery plan focused on high-protein meals under 30 minutes of prep time.',
     scenarioId: 'budget-builder',
   },
 ];
@@ -70,29 +66,22 @@ export interface ScenarioSelectorProps {
   onSelectScenario: (scenarioId: ScenarioId) => void;
   onSubmitCustomPrompt: (promptText: string) => void;
   onGenerateWithLiveGemini?: (scenarioId?: ScenarioId) => void;
-  onReplayStream: () => void;
-  streamMode: 'simulated' | 'instant';
-  onToggleStreamMode: (mode: 'simulated' | 'instant') => void;
+  onReplayStream?: () => void;
+  streamMode?: 'simulated' | 'instant';
+  onToggleStreamMode?: (mode: 'simulated' | 'instant') => void;
   engineMode?: AIEngineMode;
   onToggleEngineMode?: (mode: AIEngineMode) => void;
   geminiTelemetry?: GeminiTelemetryState;
   cartItemCount: number;
-  isStreaming: boolean;
+  isStreaming?: boolean;
 }
 
 export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
   activeScenarioId,
   onSelectScenario,
   onSubmitCustomPrompt,
-  onGenerateWithLiveGemini,
-  onReplayStream,
-  streamMode,
-  onToggleStreamMode,
-  engineMode = 'gemini-live',
-  onToggleEngineMode,
   geminiTelemetry,
   cartItemCount,
-  isStreaming,
 }) => {
   const [promptInput, setPromptInput] = useState('');
 
@@ -110,119 +99,82 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
     id: ScenarioId;
     title: string;
     subtitle: string;
-    badge: string;
+    badge?: string;
     icon: React.ReactNode;
   }> = [
     {
       id: 'meal-planner',
       title: 'Meal Planner',
-      subtitle: '@path Slider & @index List',
-      badge: 'Recipe -> Cart',
+      subtitle: 'Recipes & ingredients',
       icon: <UtensilsCrossed className="w-4 h-4" />,
     },
     {
       id: 'cart-optimizer',
-      title: 'Cart Optimizer',
-      subtitle: 'Live Cart Swaps & Tabs',
-      badge: `${cartItemCount} in Cart`,
+      title: 'Cart Savings',
+      subtitle: 'Smart swaps & backups',
+      badge: cartItemCount > 0 ? `${cartItemCount} in cart` : undefined,
       icon: <ArrowLeftRight className="w-4 h-4" />,
     },
     {
       id: 'budget-builder',
-      title: 'Budget & Macros',
-      subtitle: 'v1.0 checks & Modal',
-      badge: 'Validator',
+      title: 'Weekly Planner',
+      subtitle: 'Budget & nutrition',
       icon: <Wallet className="w-4 h-4" />,
     },
   ];
 
   return (
-    <div className="bg-white border-b border-stone-200/90 px-4 py-3 space-y-2.5">
-      {/* Live Gemini LLM Telemetry & Engine Selector Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-emerald-950/95 text-white px-3 py-2 rounded-xl border border-emerald-800/80 shadow-2xs">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="relative flex h-2.5 w-2.5 shrink-0">
-            <span
-              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                geminiTelemetry?.configured !== false
-                  ? 'bg-emerald-400'
-                  : 'bg-amber-400'
-              }`}
-            />
-            <span
-              className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                geminiTelemetry?.configured !== false
-                  ? 'bg-emerald-400'
-                  : 'bg-amber-400'
-              }`}
-            />
-          </span>
-          <Cpu className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-          <span className="text-[11px] font-bold tracking-tight truncate">
-            {geminiTelemetry?.model
-              ? `Gemini (${geminiTelemetry.model}) · Live LLM`
-              : 'Gemini 2.5 Flash · Live LLM'}
-          </span>
-
-          {geminiTelemetry?.lastLatencyMs !== undefined && (
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-900/90 text-emerald-200 border border-emerald-700/60">
-              {geminiTelemetry.lastLatencyMs}ms ·{' '}
-              {geminiTelemetry.lastComponentCount ?? 0} nodes
-            </span>
+    <div className="bg-white border-b border-stone-200/80 px-4 py-3.5 space-y-3">
+      {/* Natural Language Prompt Bar */}
+      <form onSubmit={handleFormSubmit} className="relative flex items-center">
+        <Sparkles className="w-4 h-4 text-[#0AAD0A] absolute left-3.5 pointer-events-none" />
+        <input
+          type="text"
+          value={promptInput}
+          disabled={isGeminiBusy}
+          onChange={(e) => setPromptInput(e.target.value)}
+          placeholder={
+            isGeminiBusy
+              ? 'Personalizing ideas for your kitchen...'
+              : 'Ask for a recipe, meal plan, or cart savings...'
+          }
+          aria-label="Ask AI Personal Shopper"
+          className="w-full text-xs sm:text-sm bg-stone-50 border border-stone-200/90 focus:border-[#0AAD0A] focus:bg-white rounded-2xl pl-9 pr-10 py-2.5 text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/15 transition-all disabled:opacity-60"
+        />
+        <button
+          type="submit"
+          disabled={isGeminiBusy || !promptInput.trim()}
+          aria-label="Send request"
+          className="absolute right-1.5 p-2 rounded-xl bg-[#0AAD0A] hover:bg-[#089208] disabled:bg-stone-200 disabled:text-stone-400 text-white transition-colors cursor-pointer"
+        >
+          {isGeminiBusy ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Send className="w-3.5 h-3.5" />
           )}
-        </div>
+        </button>
+      </form>
 
-        <div className="flex items-center gap-1.5 ml-auto">
-          {onToggleEngineMode && (
-            <button
-              type="button"
-              onClick={() =>
-                onToggleEngineMode(
-                  engineMode === 'gemini-live' ? 'blueprint' : 'gemini-live'
-                )
-              }
-              className={`text-[10px] font-semibold px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
-                engineMode === 'gemini-live'
-                  ? 'bg-[#0AAD0A] text-white border-emerald-400/50'
-                  : 'bg-stone-800 text-stone-300 border-stone-700 hover:bg-stone-700'
-              }`}
-              title="Switch between Live Gemini LLM generation and deterministic A2UI v1.0 blueprints"
-            >
-              {engineMode === 'gemini-live'
-                ? 'Mode: Live Gemini LLM'
-                : 'Mode: Deterministic Blueprint'}
-            </button>
-          )}
-
-          {onGenerateWithLiveGemini && (
-            <button
-              type="button"
-              disabled={isGeminiBusy}
-              onClick={() => onGenerateWithLiveGemini(activeScenarioId)}
-              className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white text-[#073E1E] hover:bg-emerald-50 disabled:opacity-60 transition-colors cursor-pointer shadow-2xs"
-              title="Call the live Cloudtop Gemini API to generate a fresh A2UI v1.0 surface for this scenario"
-            >
-              {isGeminiBusy ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin text-[#0AAD0A]" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Bot className="w-3.5 h-3.5 text-[#0AAD0A]" />
-                  Generate with Live Gemini
-                </>
-              )}
-            </button>
-          )}
-        </div>
+      {/* Friendly Suggestion Chips */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+        {QUICK_PROMPT_CHIPS.map((chip) => (
+          <button
+            key={chip.id}
+            type="button"
+            disabled={isGeminiBusy}
+            onClick={() => onSubmitCustomPrompt(chip.prompt)}
+            className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100/90 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70 transition-all whitespace-nowrap disabled:opacity-50 cursor-pointer"
+          >
+            {chip.label}
+          </button>
+        ))}
       </div>
 
-      {/* Top Scenario Switcher Grid */}
+      {/* 3 Clean Navigation Tabs */}
       <div
         className="grid grid-cols-3 gap-2"
         role="tablist"
-        aria-label="A2UI v1.0 Scenarios"
+        aria-label="Shopping assistant tools"
       >
         {scenarios.map((scen) => {
           const isActive = activeScenarioId === scen.id;
@@ -233,15 +185,15 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
               role="tab"
               aria-selected={isActive}
               onClick={() => onSelectScenario(scen.id)}
-              className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+              className={`flex flex-col items-start p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-emerald-50/90 border-[#0AAD0A] ring-1 ring-[#0AAD0A]/30 shadow-2xs'
-                  : 'bg-stone-50/70 border-stone-200/80 hover:bg-stone-100/80 text-stone-700'
+                  ? 'bg-emerald-50/70 border-[#0AAD0A] ring-1 ring-[#0AAD0A]/25 shadow-2xs'
+                  : 'bg-stone-50/60 border-stone-200/80 hover:bg-stone-100/70 text-stone-700'
               }`}
             >
               <div className="flex items-center justify-between w-full mb-1">
                 <span
-                  className={`p-1 rounded-lg ${
+                  className={`p-1.5 rounded-xl transition-colors ${
                     isActive
                       ? 'bg-[#0AAD0A] text-white'
                       : 'bg-stone-200/70 text-stone-600'
@@ -249,15 +201,17 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
                 >
                   {scen.icon}
                 </span>
-                <span
-                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    isActive
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-stone-200/70 text-stone-600'
-                  }`}
-                >
-                  {scen.badge}
-                </span>
+                {scen.badge && (
+                  <span
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      isActive
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-stone-200/70 text-stone-600'
+                    }`}
+                  >
+                    {scen.badge}
+                  </span>
+                )}
               </div>
               <span
                 className={`text-xs font-bold leading-tight ${
@@ -266,94 +220,13 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
               >
                 {scen.title}
               </span>
-              <span className="text-[10px] text-stone-500 truncate w-full mt-0.5">
+              <span className="text-[11px] text-stone-500 truncate w-full mt-0.5">
                 {scen.subtitle}
               </span>
             </button>
           );
         })}
       </div>
-
-      {/* Quick Prompt Chips & Stream Controls Row */}
-      <div className="flex flex-wrap items-center justify-between gap-1.5">
-        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 max-w-full">
-          {QUICK_PROMPT_CHIPS.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              disabled={isGeminiBusy}
-              onClick={() => onSubmitCustomPrompt(chip.prompt)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 text-stone-700 border border-stone-200/80 transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer"
-              title={chip.prompt}
-            >
-              <Sparkles className="w-3 h-3 text-[#0AAD0A] shrink-0" />
-              {chip.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-1.5 ml-auto">
-          <button
-            type="button"
-            onClick={() =>
-              onToggleStreamMode(
-                streamMode === 'simulated' ? 'instant' : 'simulated'
-              )
-            }
-            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 cursor-pointer"
-            title="Toggle between progressive 3-packet streaming and instant hydration"
-          >
-            <Zap
-              className={`w-3 h-3 ${
-                streamMode === 'simulated'
-                  ? 'text-amber-500'
-                  : 'text-emerald-600'
-              }`}
-            />
-            {streamMode === 'simulated' ? 'Stream: 220ms/pkt' : 'Stream: Instant'}
-          </button>
-
-          <button
-            type="button"
-            onClick={onReplayStream}
-            disabled={isStreaming || isGeminiBusy}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 disabled:opacity-50 cursor-pointer"
-            title="Replay the 3-step A2UI v1.0 packet stream (createSurface -> updateComponents -> updateDataModel)"
-          >
-            <Play className="w-3 h-3 fill-current" />
-            Replay Stream
-          </button>
-        </div>
-      </div>
-
-      {/* Natural Language Prompt Bar (wired to Live Gemini LLM) */}
-      <form onSubmit={handleFormSubmit} className="relative flex items-center">
-        <input
-          type="text"
-          value={promptInput}
-          disabled={isGeminiBusy}
-          onChange={(e) => setPromptInput(e.target.value)}
-          placeholder={
-            isGeminiBusy
-              ? 'Gemini 2.5 Flash is synthesizing A2UI v1.0 envelopes...'
-              : "Ask Live Gemini AI Shopper: e.g. 'keto salmon dinner for 5', 'swap cart to organic'..."
-          }
-          aria-label="Ask FreshCart AI Personal Shopper"
-          className="w-full text-xs bg-stone-50 border border-stone-200/90 focus:border-[#0AAD0A] focus:bg-white rounded-xl pl-3 pr-9 py-2.5 text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/20 transition-all disabled:opacity-60"
-        />
-        <button
-          type="submit"
-          disabled={isGeminiBusy || !promptInput.trim()}
-          aria-label="Send prompt to Live Gemini AI Shopper"
-          className="absolute right-1.5 p-1.5 rounded-lg bg-[#0AAD0A] hover:bg-[#089208] disabled:bg-stone-300 text-white transition-colors cursor-pointer"
-        >
-          {isGeminiBusy ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Send className="w-3.5 h-3.5" />
-          )}
-        </button>
-      </form>
     </div>
   );
 };

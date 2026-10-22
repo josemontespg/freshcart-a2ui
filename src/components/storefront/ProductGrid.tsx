@@ -105,18 +105,17 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   if (filteredAndSortedProducts.length === 0) {
     return (
-      <div className="bg-white rounded-3xl border border-stone-200/80 p-8 sm:p-12 text-center max-w-xl mx-auto my-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-3xl border border-stone-200/70 p-8 sm:p-12 text-center max-w-xl mx-auto my-6 shadow-2xs space-y-4">
         <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#0AAD0A] flex items-center justify-center mx-auto">
           <PackageSearch className="w-7 h-7" />
         </div>
         <div className="space-y-1.5">
           <h3 className="text-lg font-bold text-stone-900">
-            No matching groceries in this view
+            No groceries match your filters
           </h3>
           <p className="text-sm text-stone-500">
-            We couldn&apos;t find any items matching your active aisle, dietary,
-            or keyword filters. Reset filters or let our A2UI v1.0 Personal
-            Shopper build a custom bundle.
+            Try clearing an aisle or dietary filter, or ask your AI Personal
+            Shopper to recommend ingredients for your meal.
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -124,20 +123,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             <button
               type="button"
               onClick={onResetFilters}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0AAD0A] hover:bg-[#099409] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#0AAD0A] hover:bg-[#099409] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Reset All Filters</span>
+              <span>Clear Filters</span>
             </button>
           )}
           {onLaunchAIScenario && (
             <button
               type="button"
               onClick={() => onLaunchAIScenario('meal-planner')}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-[#0AAD0A]" />
-              <span>Ask AI Personal Shopper</span>
+              <span>Ask AI Shopper</span>
             </button>
           )}
         </div>
@@ -157,7 +156,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 tracking-tight">
               {activeCategoryMeta.label}
             </h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-stone-200/80 text-stone-700">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-200/70 text-stone-600">
               {filteredAndSortedProducts.length}
             </span>
           </div>
@@ -168,7 +167,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       </div>
 
       {/* Responsive 4-Column Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredAndSortedProducts.map((product) => (
           <ProductCard
             key={product.id}

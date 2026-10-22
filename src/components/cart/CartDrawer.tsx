@@ -252,41 +252,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            {/* One-Click A2UI v1.0 Smart Cart Optimizer Card */}
+            {/* Smart Cart Savings & Swaps Callout */}
             {items.length > 0 && (
-              <div className="bg-gradient-to-r from-[#073E1E] via-[#0B5328] to-[#108910] text-white rounded-2xl p-4 shadow-md border border-emerald-800/40">
+              <div className="bg-gradient-to-r from-[#073E1E] via-[#0B5328] to-[#108910] text-white rounded-2xl p-4 shadow-sm border border-emerald-800/30">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/15 text-emerald-100 mb-1.5">
-                      <Sparkles className="w-3 h-3 text-amber-300" />
-                      <span>A2UI v1.0 Live Cart Surface</span>
-                    </div>
-                    <h3 className="text-sm font-bold leading-snug">
-                      Smart Cart Substitution &amp; Savings Optimizer
+                    <h3 className="text-sm font-bold leading-snug flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span>✨ Smart Cart Savings &amp; Swaps</span>
                     </h3>
                     <p className="text-xs text-emerald-100/90 mt-1 leading-relaxed">
-                      {optimizationStats.totalOpportunities > 0 ? (
-                        <>
-                          Found{' '}
-                          <strong>
-                            {optimizationStats.budgetCount} budget savers
-                          </strong>
-                          ,{' '}
-                          <strong>
-                            {optimizationStats.organicCount} organic upgrades
-                          </strong>
-                          , and{' '}
-                          <strong>
-                            {optimizationStats.lowStockCount} low-stock backups
-                          </strong>{' '}
-                          for your cart.
-                        </>
-                      ) : (
-                        <>
-                          Stream an interactive A2UI v1.0 surface to compare
-                          budget swaps, organic upgrades, and backup SKUs.
-                        </>
-                      )}
+                      Compare budget alternatives, organic upgrades, and
+                      in-stock backups
+                      {optimizationStats.totalOpportunities > 0
+                        ? ` (${optimizationStats.totalOpportunities} options ready for your cart).`
+                        : '.'}
                     </p>
                   </div>
                 </div>
@@ -294,11 +274,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <button
                   type="button"
                   onClick={handleOptimizeWithAI}
-                  className="mt-3 w-full py-2.5 px-4 rounded-xl bg-white text-[#073E1E] hover:bg-emerald-50 font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                  className="mt-3 w-full py-2.5 px-4 rounded-xl bg-white text-[#073E1E] hover:bg-emerald-50 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-[#0AAD0A]" />
-                  <span>Optimize Cart with AI (A2UI v1.0)</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Review Smart Swaps &amp; Savings</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#0AAD0A]" />
                 </button>
               </div>
             )}
@@ -313,8 +292,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   Your {activeStore.name} cart is empty
                 </h3>
                 <p className="text-xs text-stone-600 mt-1 max-w-xs mx-auto leading-relaxed">
-                  Add fresh produce, pantry staples, or launch the AI Personal
-                  Shopper to stream interactive recipe bundles into your cart.
+                  Browse fresh produce and pantry staples, or ask your AI
+                  Personal Shopper for quick dinner ideas.
                 </p>
                 <div className="mt-5 flex flex-col gap-2">
                   <button
@@ -323,7 +302,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     className="w-full py-2.5 px-4 rounded-xl bg-[#0AAD0A] hover:bg-[#099409] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all"
                   >
                     <PackagePlus className="w-4 h-4" />
-                    <span>Load 4-Item Starter Cart (Swap-Ready)</span>
+                    <span>Fill with Popular Essentials</span>
                   </button>
                   <button
                     type="button"
@@ -331,7 +310,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
                   >
                     <Sparkles className="w-4 h-4 text-[#0AAD0A]" />
-                    <span>Open AI Personal Shopper (A2UI v1.0)</span>
+                    <span>Ask AI Personal Shopper</span>
                   </button>
                 </div>
               </div>

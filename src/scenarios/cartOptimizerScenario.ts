@@ -216,7 +216,7 @@ export function deriveSwapsFromCart(
           imageUrl: backupAlt.imageUrl,
           reason: `${prod.name} is currently Low Stock in ${prod.aisleLocation}. Swap now to guarantee fulfillment.`,
           applied: false,
-          actionLabel: 'Swap to In-Stock SKU',
+          actionLabel: 'Swap to In-Stock Item',
         });
       }
     }
@@ -250,18 +250,18 @@ export function buildCartOptimizerDataModel(
   const topBackupSwap = backupSwaps[0] ?? topBudgetSwap;
 
   return {
-    headline: `## Smart Cart Optimizer · ${swaps.length} Live Recommendations`,
+    headline: `## Smart Cart Savings · ${swaps.length} Recommendations`,
     subheadline:
       cartItems.length > 0
-        ? `Analyzed ${cartItems.length} items in your cart · Up to $${potentialSavings.toFixed(2)} instant savings`
-        : 'Showing sample cart optimization · Click any card to swap SKUs in real time',
+        ? `Analyzed ${cartItems.length} items in your cart · Up to $${potentialSavings.toFixed(2)} in instant savings`
+        : 'Compare budget savers, organic upgrades, and in-stock backups for your cart',
     cartItemCount: cartItems.length,
     potentialSavings,
     totalSavingsApplied: 0,
     swapsAppliedCount: 0,
     lowStockCount,
     allApplied: false,
-    lastActionConfirmation: `${swaps.length} smart swap opportunities ready (${lowStockCount} low-stock item protected)`,
+    lastActionConfirmation: `${swaps.length} smart swap recommendations ready (${lowStockCount} low-stock backup included)`,
     swaps,
     topBudgetDeal: topBudgetSwap,
     topOrganicDeal: topOrganicSwap,
@@ -628,16 +628,16 @@ export function buildCartOptimizerStream(
           id: 'headline_text',
           component: 'Text',
           variant: 'body',
-          text: '## Scanning active cart SKUs for savings & low-stock risks...',
+          text: '## Finding smart savings and backups for your cart...',
         },
       ],
       dataModel: {
-        headline: '## Scanning active cart SKUs...',
-        subheadline: 'Evaluating budget alternatives, organic upgrades, and stock status',
+        headline: '## Finding smart savings and backups...',
+        subheadline: 'Evaluating budget alternatives, organic upgrades, and stock availability',
         potentialSavings: 0,
         totalSavingsApplied: 0,
         swaps: [],
-        lastActionConfirmation: 'Analyzing CartContext items...',
+        lastActionConfirmation: 'Checking items in your cart...',
       },
     },
   };

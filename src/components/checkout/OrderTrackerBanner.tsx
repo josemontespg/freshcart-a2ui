@@ -151,11 +151,6 @@ export const OrderTrackerBanner: React.FC<OrderTrackerBannerProps> = ({
                   <span className="text-xs font-bold truncate">
                     {toast.title}
                   </span>
-                  {toast.source === 'a2ui-shopper' && (
-                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/15 text-emerald-200 shrink-0">
-                      A2UI v1.0
-                    </span>
-                  )}
                 </div>
                 {toast.description && (
                   <p

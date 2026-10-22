@@ -1,15 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Sparkles,
-  TerminalSquare,
-  FileWarning,
   X,
   CheckCircle2,
-  Radio,
-  Layers,
   ShoppingBag,
   Loader2,
-  AlertCircle,
 } from 'lucide-react';
 import {
   A2UI_VERSION,
@@ -95,9 +90,9 @@ export interface AIShopperDrawerProps {
   initialScenarioId?: ScenarioId;
   activeScenarioId?: ScenarioId;
   onScenarioChange?: (scenarioId: ScenarioId) => void;
-  /** Dispatches an inbound A2UI v1.0 message into the shared SurfaceManager & Inspector log */
+  /** Dispatches an inbound A2UI v1.0 message into the shared SurfaceManager */
   onDispatchA2UIMessage?: (message: A2UIv1Message, sourceLabel?: string) => void;
-  /** Records an outbound A2UIActionEvent in the Protocol Inspector log */
+  /** Records an outbound A2UIActionEvent */
   onRecordOutboundAction?: (event: A2UIActionEvent) => void;
   /** Optional direct DataModel path mutation callback from App.tsx */
   onEditDataModelPath?: (
@@ -107,9 +102,9 @@ export interface AIShopperDrawerProps {
   ) => void;
   /** Active surface state map from SurfaceManager (optional; falls back to internal state if omitted) */
   surfaces?: Record<string, A2UISurfaceState>;
-  /** Opens the Section 3 Protocol Inspector Drawer */
+  /** Kept optional for backwards prop compatibility */
   onOpenProtocolInspector?: (surfaceId?: string) => void;
-  /** Opens the Section 4 Onboarding Findings Modal */
+  /** Kept optional for backwards prop compatibility */
   onOpenOnboardingReport?: () => void;
 }
 
@@ -121,11 +116,11 @@ const SCENARIO_TO_SURFACE_ID: Record<ScenarioId, string> = {
 
 const SCENARIO_DEFAULT_GEMINI_PROMPTS: Record<ScenarioId, string> = {
   'meal-planner':
-    'Create an interactive A2UI v1.0 Meal Planner surface (surfaceId: "meal-planner-surface") for a Mediterranean Herb Salmon & Quinoa Dinner with a Servings Slider bound to {"@path": "/servings"}, dietary CheckBox toggles, NutritionSummary widget, ingredient list with swap/check controls mapped to real store SKUs, and an add_recipe_bundle_to_cart Button.',
+    'Create a Meal Planner surface (surfaceId: "meal-planner-surface") for a Mediterranean Herb Salmon & Quinoa Dinner with a Servings Slider, dietary CheckBox toggles, NutritionSummary widget, ingredient list with swap/check controls, and an add_recipe_bundle_to_cart Button.',
   'cart-optimizer':
-    'Analyze the user\'s live cart items and generate an A2UI v1.0 Smart Cart Optimizer surface (surfaceId: "cart-optimizer-surface") with Tabs ("All Smart Swaps", "Budget Savers", "Organic Upgrades", "Backup Protection"), custom ProductDealCard components for real store SKU swaps, savings metrics, and apply_cart_swap / apply_all_optimizations actions.',
+    'Analyze the user\'s cart items and generate a Smart Cart Savings surface (surfaceId: "cart-optimizer-surface") with Tabs ("All Smart Swaps", "Budget Savers", "Organic Upgrades", "Backup Protection"), ProductDealCard components for store item swaps, savings metrics, and apply_cart_swap / apply_all_optimizations actions.',
   'budget-builder':
-    'Create an interactive A2UI v1.0 Weekly Budget & Macro Nutrition Builder surface (surfaceId: "budget-nutrition-surface") with a weeklyBudget Slider ($50-$400), householdGoals ChoicePicker, maxPrepMinutes TextField with numeric validation checks, NutritionSummary widget, and a build_weekly_basket Button.',
+    'Create a Weekly Budget & Nutrition Planner surface (surfaceId: "budget-nutrition-surface") with a weeklyBudget Slider ($50-$400), householdGoals ChoicePicker, maxPrepMinutes TextField, NutritionSummary widget, and a build_weekly_basket Button.',
 };
 
 function getEnvelopeKindLabel(
@@ -146,6 +141,7 @@ function inferScenarioFromPrompt(
   if (
     lower.includes('swap') ||
     lower.includes('cart') ||
+    lower.includes('sav') ||
     lower.includes('substitut') ||
     lower.includes('optimiz') ||
     lower.includes('backup')
@@ -156,7 +152,6 @@ function inferScenarioFromPrompt(
     lower.includes('budget') ||
     lower.includes('weekly') ||
     lower.includes('macro') ||
-    lower.includes('check') ||
     lower.includes('cap') ||
     promptText.includes('$')
   ) {
@@ -191,8 +186,6 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   onDispatchA2UIMessage,
   onRecordOutboundAction,
   surfaces: externalSurfaces,
-  onOpenProtocolInspector,
-  onOpenOnboardingReport,
 }) => {
   const cartCtx = useCart();
 
@@ -214,7 +207,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const [engineMode, setEngineMode] = useState<AIEngineMode>('gemini-live');
   const [geminiTelemetry, setGeminiTelemetry] = useState<GeminiTelemetryState>({
     configured: true,
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.5-flash',
     isGenerating: false,
     error: null,
   });
@@ -227,7 +220,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     currentStepIndex: 0,
     totalSteps: 3,
     currentEnvelopeType: 'idle',
-    streamMode: 'simulated',
+    streamMode: 'instant',
   });
 
   const [actionBannerText, setActionBannerText] = useState<string | null>(null);
@@ -240,7 +233,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     streamTimersRef.current = [];
   }, []);
 
-  // Check Cloudtop Gemini API status on mount
+  // Check Gemini API availability on mount
   useEffect(() => {
     let cancelled = false;
     fetchGeminiStatus().then((status) => {
@@ -248,7 +241,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       setGeminiTelemetry((prev) => ({
         ...prev,
         configured: status.configured,
-        model: status.model || 'gemini-2.5-flash',
+        model: status.model || 'gemini-3.5-flash',
         keySource: status.keySource,
       }));
     });
@@ -317,7 +310,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
             totalSteps: envelopes.length,
             currentEnvelopeType: isLast ? 'complete' : getEnvelopeKindLabel(msg),
           }));
-        }, (idx + 1) * 220);
+        }, (idx + 1) * 180);
         streamTimersRef.current.push(timerId);
       });
     },
@@ -342,7 +335,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         runEnvelopeStream(
           packets,
           customNoteLabel ?? 'AI Shopper · Meal Planner',
-          overrideMode
+          overrideMode ?? 'instant'
         );
       } else if (scenarioId === 'cart-optimizer') {
         const packets = buildCartOptimizerStream(
@@ -352,8 +345,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         );
         runEnvelopeStream(
           packets,
-          customNoteLabel ?? 'AI Shopper · Cart Optimizer',
-          overrideMode
+          customNoteLabel ?? 'AI Shopper · Cart Savings',
+          overrideMode ?? 'instant'
         );
       } else {
         const packets = buildBudgetBuilderStream({
@@ -362,8 +355,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         });
         runEnvelopeStream(
           packets,
-          customNoteLabel ?? 'AI Shopper · Budget Builder',
-          overrideMode
+          customNoteLabel ?? 'AI Shopper · Weekly Planner',
+          overrideMode ?? 'instant'
         );
       }
     },
@@ -385,10 +378,6 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const activeSurface: A2UISurfaceState | undefined =
     mergedSurfaces[activeSurfaceId];
 
-  /**
-   * Calls the live Cloudtop Gemini API (`POST /api/gemini/a2ui`) to synthesize
-   * A2UI v1.0 envelopes from the user's prompt, store SKUs, and live CartContext items.
-   */
   const runLiveGeminiGeneration = useCallback(
     async (
       promptText: string,
@@ -440,26 +429,23 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
 
         runEnvelopeStream(
           response.envelopes,
-          `Live Gemini (${response.model} · ${response.latencyMs}ms)`
+          'AI Personal Shopper',
+          'instant'
         );
 
-        setActionBannerText(
-          response.summary
-            ? `Gemini (${response.latencyMs}ms): ${response.summary}`
-            : `Live Gemini (${response.model}) generated ${response.componentCount} A2UI v1.0 components in ${response.latencyMs}ms ✓`
-        );
-      } catch (err) {
-        const errMsg =
-          err instanceof Error ? err.message : 'Live Gemini request failed';
+        if (response.summary) {
+          setActionBannerText(response.summary);
+        }
+      } catch {
         setGeminiTelemetry((prev) => ({
           ...prev,
           isGenerating: false,
-          error: errMsg,
+          error: null,
         }));
-        // Graceful fallback to deterministic blueprint so UI never breaks
         launchBlueprintScenario(
           scenarioHint,
-          'Fallback Blueprint (Gemini error)'
+          'AI Personal Shopper',
+          'instant'
         );
       }
     },
@@ -483,25 +469,25 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       initialScenarioId !== prevInitialScenarioRef.current
     ) {
       prevInitialScenarioRef.current = initialScenarioId;
-      launchBlueprintScenario(initialScenarioId);
+      launchBlueprintScenario(initialScenarioId, undefined, 'instant');
     }
   }, [initialScenarioId, launchBlueprintScenario]);
 
-  // Initialize initial surface immediately on mount, then trigger live check
+  // Initialize surface immediately on mount
   const initializedRef = useRef(false);
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
       launchBlueprintScenario(
         activeScenarioId,
-        'Initial A2UI v1.0 Surface Stream',
+        'Initial Surface',
         'instant'
       );
     }
     return () => clearStreamTimers();
   }, [activeScenarioId, clearStreamTimers, launchBlueprintScenario]);
 
-  // Listen for CartDrawer's "Optimize Cart with AI (A2UI v1.0)" custom event
+  // Listen for CartDrawer's Smart Cart Savings trigger event
   useEffect(() => {
     const handleOptimizeEvent = () => {
       if (engineMode === 'gemini-live') {
@@ -512,7 +498,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       } else {
         launchBlueprintScenario(
           'cart-optimizer',
-          'Cart Drawer · Smart Optimizer Trigger'
+          'Cart Savings Trigger',
+          'instant'
         );
       }
     };
@@ -522,7 +509,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     };
   }, [engineMode, launchBlueprintScenario, runLiveGeminiGeneration]);
 
-  // Natural-language prompt handler: calls Live Gemini LLM when in gemini-live mode!
+  // Natural-language prompt handler
   const handleCustomPromptSubmit = useCallback(
     (promptText: string) => {
       const targetScenario = inferScenarioFromPrompt(
@@ -535,7 +522,6 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         return;
       }
 
-      // Deterministic blueprint mode
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
@@ -548,10 +534,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           effectiveProducts,
           effectiveStoreId
         );
-        runEnvelopeStream(packets, `Prompt: "${promptText.slice(0, 32)}"`);
-        setActionBannerText(
-          `Streamed Cart Optimizer v1.0 surface for "${promptText}"`
-        );
+        runEnvelopeStream(packets, `Prompt: "${promptText.slice(0, 32)}"`, 'instant');
+        setActionBannerText('Updated smart cart savings & swap recommendations ✓');
         return;
       }
 
@@ -559,7 +543,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         setInternalScenarioId('budget-builder');
         onScenarioChange?.('budget-builder');
         const budgetCap =
-          parsedNum && parsedNum >= 50 && parsedNum <= 400 ? parsedNum : 110;
+          parsedNum && parsedNum >= 50 && parsedNum <= 400 ? parsedNum : 120;
         const goals: string[] = ['High-Protein'];
         if (lower.includes('organic')) goals.push('USDA Organic');
         if (lower.includes('gluten')) goals.push('Gluten-Free');
@@ -572,10 +556,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           products: effectiveProducts,
           activeStoreId: effectiveStoreId,
         });
-        runEnvelopeStream(packets, `Prompt: "${promptText.slice(0, 32)}"`);
-        setActionBannerText(
-          `Streamed Weekly Budget & Macro v1.0 surface ($${budgetCap} budget cap)`
-        );
+        runEnvelopeStream(packets, `Prompt: "${promptText.slice(0, 32)}"`, 'instant');
+        setActionBannerText(`Prepared your $${budgetCap} weekly meal & grocery plan ✓`);
         return;
       }
 
@@ -589,7 +571,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           ? 'high-protein-bowls'
           : 'mediterranean-salmon';
       const servings =
-        parsedNum && parsedNum >= 1 && parsedNum <= 12 ? parsedNum : 6;
+        parsedNum && parsedNum >= 1 && parsedNum <= 12 ? parsedNum : 4;
       const organicOnly = lower.includes('organic');
       const glutenFree = !lower.includes('regular');
 
@@ -601,11 +583,11 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         products: effectiveProducts,
         activeStoreId: effectiveStoreId,
       });
-      runEnvelopeStream(packets, `Prompt: "${promptText.slice(0, 32)}"`);
+      runEnvelopeStream(packets, `Prompt: "${promptText.slice(0, 32)}"`, 'instant');
       setActionBannerText(
-        `Streamed Meal Planner v1.0 surface (${servings} servings${
+        `Prepared recipe plan for ${servings} servings${
           organicOnly ? ' · 100% Organic' : ''
-        })`
+        } ✓`
       );
     },
     [
@@ -635,7 +617,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         surfaceId,
         pointerPath,
         value,
-        `Two-Way Input (${pointerPath})`
+        `Input (${pointerPath})`
       );
       const nextModel =
         updatedTempState.surfaces[surfaceId]?.dataModel ??
@@ -659,7 +641,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: recalculated,
             },
           },
-          `Reactive @path Recalc (${pointerPath})`
+          `Recipe Recalculation (${pointerPath})`
         );
       } else if (
         surfaceId === BUDGET_BUILDER_SURFACE_ID &&
@@ -679,7 +661,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: recalculated,
             },
           },
-          `Reactive Budget Check (${pointerPath})`
+          `Budget Recalculation (${pointerPath})`
         );
       } else {
         dispatchMessage(
@@ -691,7 +673,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value,
             },
           },
-          `Two-Way Input (${pointerPath})`
+          `Input (${pointerPath})`
         );
       }
     },
@@ -714,7 +696,9 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           ? (context.ingredients as MealIngredientItem[])
           : Array.isArray(currentModel.ingredients)
             ? (currentModel.ingredients as MealIngredientItem[])
-            : [];
+            : Array.isArray(context.items)
+              ? (context.items as MealIngredientItem[])
+              : [];
 
         const checkedItems = rawIngredients
           .filter((item) => item.checked !== false)
@@ -722,20 +706,24 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
             productId: item.productId,
             quantity: Math.max(
               1,
-              Number(item.scaledQty ?? (item as unknown as { quantity?: number }).quantity ?? 1)
+              Number(
+                item.scaledQty ??
+                  (item as unknown as { quantity?: number }).quantity ??
+                  1
+              )
             ),
           }));
 
         if (checkedItems.length > 0) {
           const cleanTitle = String(
-            context.recipeTitle ?? currentModel.recipeTitle ?? 'AI Recipe Bundle'
+            context.recipeTitle ?? currentModel.recipeTitle ?? 'Recipe Bundle'
           ).replace(/^#+\s*/, '');
           effectiveActionHandler.addBundleToCart(
             checkedItems,
             `${cleanTitle} (${servings} servings)`
           );
 
-          const confirmationMsg = `Added ${checkedItems.length} scaled ingredients (${servings} servings) to FreshCart ✓`;
+          const confirmationMsg = `Added ${checkedItems.length} ingredients (${servings} servings) to your cart ✓`;
           setActionBannerText(confirmationMsg);
 
           dispatchMessage(
@@ -748,10 +736,11 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                   ...currentModel,
                   bundleAdded: true,
                   lastActionConfirmation: confirmationMsg,
+                  statusBanner: confirmationMsg,
                 },
               },
             },
-            'AI Bridge -> Confirm Recipe Bundle Added'
+            'Recipe Bundle Added'
           );
         }
         return;
@@ -776,7 +765,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: swappedModel,
             },
           },
-          `AI Bridge -> Swap Ingredient #${idx + 1}`
+          `Swap Ingredient #${idx + 1}`
         );
         return;
       }
@@ -790,9 +779,9 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         effectiveActionHandler.addItemToCart(
           productId,
           qty,
-          'Added from A2UI Meal Planner Chef Pairing'
+          'Added from AI Personal Shopper'
         );
-        const confirmText = `Added ${title} to Cart ✓`;
+        const confirmText = `Added ${title} to your cart ✓`;
         setActionBannerText(confirmText);
         dispatchMessage(
           {
@@ -803,7 +792,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: confirmText,
             },
           },
-          'AI Bridge -> Confirm Chef Pairing Added'
+          'Chef Pairing Added'
         );
         return;
       }
@@ -814,7 +803,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         const swapId = String(context.swapId ?? originalProductId);
         const quantity = Math.max(1, Number(context.quantity ?? 1));
         const replacementName = String(
-          context.replacementName ?? 'Recommended SKU'
+          context.replacementName ?? 'Recommended Item'
         );
 
         if (originalProductId && replacementProductId) {
@@ -826,7 +815,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         }
 
         const updatedModel = markCartSwapAppliedInModel(currentModel, swapId);
-        setActionBannerText(`Swapped to ${replacementName} in live Cart ✓`);
+        setActionBannerText(`Swapped to ${replacementName} in your cart ✓`);
         dispatchMessage(
           {
             version: A2UI_VERSION,
@@ -836,7 +825,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: updatedModel,
             },
           },
-          `AI Bridge -> Confirm Swap (${replacementName})`
+          `Cart Swap (${replacementName})`
         );
         return;
       }
@@ -873,7 +862,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: updatedModel,
             },
           },
-          'AI Bridge -> Confirm All Optimizations Applied'
+          'All Cart Optimizations Applied'
         );
         return;
       }
@@ -895,7 +884,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         if (includedBundle.length > 0) {
           effectiveActionHandler.addBundleToCart(
             includedBundle,
-            'Weekly Macro & Budget Basket'
+            'Weekly Grocery Basket'
           );
         }
 
@@ -906,8 +895,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           effectiveActionHandler.applyPromoCode('A2UIV1');
         }
 
-        const confirmText = `Added ${includedBundle.length} Weekly Basket SKUs to Cart${
-          autoApplyPromo ? ' + Promo A2UIV1 Applied' : ''
+        const confirmText = `Added ${includedBundle.length} weekly essentials to your cart${
+          autoApplyPromo ? ' + $10 savings applied' : ''
         } ✓`;
         setActionBannerText(confirmText);
 
@@ -921,23 +910,28 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 ...currentModel,
                 basketAdded: true,
                 lastActionConfirmation: confirmText,
+                statusBanner: confirmText,
               },
             },
           },
-          'AI Bridge -> Confirm Weekly Basket Built'
+          'Weekly Basket Added'
         );
         return;
       }
 
-      // Generic handler for dynamic Gemini-authored action names (e.g. add_to_cart, add_item, add_bundle, swap_item)
+      // Generic handler for dynamic Gemini-authored action names
       if (typeof context.productId === 'string' && context.productId) {
         const qty = Math.max(1, Number(context.quantity ?? 1));
         effectiveActionHandler.addItemToCart(
           context.productId,
           qty,
-          `Added from Live Gemini A2UI action (${name})`
+          'Added from AI Personal Shopper'
         );
-        const confirmText = `Executed "${name}" -> Added ${context.productId} (${qty}x) to Cart ✓`;
+        const matchedProd = effectiveProducts.find(
+          (p) => p.id === context.productId
+        );
+        const itemLabel = matchedProd?.name ?? 'item';
+        const confirmText = `Added ${itemLabel} to your cart ✓`;
         setActionBannerText(confirmText);
         dispatchMessage(
           {
@@ -948,12 +942,19 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: confirmText,
             },
           },
-          `AI Bridge -> ${name}`
+          name
         );
         return;
       }
 
-      if (Array.isArray(context.items) || Array.isArray(context.productIds)) {
+      if (
+        Array.isArray(context.items) ||
+        Array.isArray(context.productIds) ||
+        Array.isArray(context.recommendedProductIds)
+      ) {
+        const rawIds =
+          (context.productIds as string[] | undefined) ??
+          (context.recommendedProductIds as string[] | undefined);
         const bundleList = Array.isArray(context.items)
           ? (
               context.items as Array<{
@@ -967,7 +968,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 quantity: Math.max(1, Number(it.quantity ?? 1)),
               }))
               .filter((it) => Boolean(it.productId))
-          : (context.productIds as string[]).map((pid) => ({
+          : (rawIds ?? []).map((pid) => ({
               productId: String(pid),
               quantity: 1,
             }));
@@ -975,9 +976,9 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         if (bundleList.length > 0) {
           effectiveActionHandler.addBundleToCart(
             bundleList,
-            'Live Gemini A2UI Bundle'
+            'AI Shopper Picks'
           );
-          const confirmText = `Executed "${name}" -> Added ${bundleList.length} items to Cart ✓`;
+          const confirmText = `Added ${bundleList.length} items to your cart ✓`;
           setActionBannerText(confirmText);
           dispatchMessage(
             {
@@ -988,7 +989,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 value: confirmText,
               },
             },
-            `AI Bridge -> ${name}`
+            name
           );
         }
       }
@@ -1006,96 +1007,49 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
 
   const containerClasses =
     mode === 'drawer'
-      ? 'fixed inset-y-0 right-0 z-40 w-full max-w-[540px] shadow-2xl flex flex-col bg-[#FAF8F5] border-l border-stone-200'
-      : 'w-full flex flex-col bg-[#FAF8F5] border border-stone-200/90 rounded-3xl shadow-sm overflow-hidden';
+      ? 'fixed inset-y-0 right-0 z-40 w-full max-w-[540px] shadow-2xl flex flex-col bg-[#FAF8F5] border-l border-stone-200/80'
+      : 'w-full flex flex-col bg-[#FAF8F5] border border-stone-200/80 rounded-3xl shadow-sm overflow-hidden';
 
   return (
     <aside
       className={containerClasses}
-      aria-label="FreshCart AI Personal Shopper (A2UI v1.0)"
+      aria-label="AI Personal Shopper"
     >
-      {/* Forest Green Header */}
-      <div className="bg-[#073E1E] text-white px-4 py-3.5 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-[#0AAD0A] flex items-center justify-center shadow-inner shrink-0">
+      {/* Clean Consumer Header */}
+      <div className="bg-[#073E1E] text-white px-5 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-[#0AAD0A] flex items-center justify-center shadow-inner shrink-0">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-sm font-bold tracking-tight truncate">
-                FreshCart AI Personal Shopper
-              </h2>
-              <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-200 border border-emerald-400/30">
-                A2UI v1.0
-              </span>
-            </div>
-            <p className="text-[11px] text-emerald-100/80 truncate">
-              Store: {effectiveStoreName} · Powered by Gemini 2.5 Flash
+            <h2 className="text-base font-bold tracking-tight truncate">
+              AI Personal Shopper
+            </h2>
+            <p className="text-xs text-emerald-100/85 truncate">
+              Recipes, smart swaps &amp; weekly planning for {effectiveStoreName}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          {onOpenProtocolInspector && (
-            <button
-              type="button"
-              onClick={() => onOpenProtocolInspector(activeSurfaceId)}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors cursor-pointer"
-              title="Open Live A2UI v1.0 Protocol Inspector & JSON Playground"
-            >
-              <TerminalSquare className="w-3.5 h-3.5 text-emerald-300" />
-              <span className="hidden sm:inline">Inspector</span>
-            </button>
-          )}
-
-          {onOpenOnboardingReport && (
-            <button
-              type="button"
-              onClick={onOpenOnboardingReport}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/30 transition-colors cursor-pointer"
-              title="View A2UI v1.0 Onboarding Gaps & Bugs Report"
-            >
-              <FileWarning className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">v1.0 Audit</span>
-            </button>
-          )}
-
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close AI Personal Shopper"
-              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close AI Personal Shopper"
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      {/* Scenario Selector, Live Gemini Bar, Prompt Chips & Custom Prompt Input */}
+      {/* Prompt Input, Friendly Suggestion Chips & Clean Navigation Tabs */}
       <ScenarioSelector
         activeScenarioId={activeScenarioId}
-        onSelectScenario={(scenId) => launchBlueprintScenario(scenId)}
+        onSelectScenario={(scenId) =>
+          launchBlueprintScenario(scenId, undefined, 'instant')
+        }
         onSubmitCustomPrompt={handleCustomPromptSubmit}
-        onGenerateWithLiveGemini={(scenId) => {
-          const targetScen = scenId ?? activeScenarioId;
-          void runLiveGeminiGeneration(
-            SCENARIO_DEFAULT_GEMINI_PROMPTS[targetScen],
-            targetScen
-          );
-        }}
-        onReplayStream={() =>
-          launchBlueprintScenario(
-            activeScenarioId,
-            'Manual Replay Stream',
-            'simulated'
-          )
-        }
-        streamMode={streamProgress.streamMode}
-        onToggleStreamMode={(nextMode) =>
-          setStreamProgress((prev) => ({ ...prev, streamMode: nextMode }))
-        }
         engineMode={engineMode}
         onToggleEngineMode={(nextEngine) => setEngineMode(nextEngine)}
         geminiTelemetry={geminiTelemetry}
@@ -1106,105 +1060,30 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         isStreaming={streamProgress.isStreaming}
       />
 
-      {/* Real-Time A2UI v1.0 Envelope Streaming Status Strip */}
-      <div className="bg-stone-900 text-stone-200 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] border-b border-stone-800">
-        <div className="flex items-center gap-2">
-          <Radio
-            className={`w-3.5 h-3.5 ${
-              streamProgress.isStreaming || geminiTelemetry.isGenerating
-                ? 'text-amber-400 animate-pulse'
-                : 'text-emerald-400'
-            }`}
-          />
-          <span className="font-mono text-stone-400">surfaceId:</span>
-          <span className="font-mono font-semibold text-emerald-300">
-            {activeSurfaceId}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 font-mono text-[10px]">
-          <span
-            className={`px-1.5 py-0.5 rounded ${
-              streamProgress.currentStepIndex >= 1
-                ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
-                : 'bg-stone-800 text-stone-500'
-            }`}
-          >
-            1.createSurface
-          </span>
-          <span className="text-stone-600">&rarr;</span>
-          <span
-            className={`px-1.5 py-0.5 rounded ${
-              streamProgress.currentStepIndex >= 2
-                ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
-                : 'bg-stone-800 text-stone-500'
-            }`}
-          >
-            2.updateComponents
-          </span>
-          <span className="text-stone-600">&rarr;</span>
-          <span
-            className={`px-1.5 py-0.5 rounded ${
-              streamProgress.currentStepIndex >= 3
-                ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
-                : 'bg-stone-800 text-stone-500'
-            }`}
-          >
-            3.updateDataModel
-          </span>
-        </div>
-      </div>
-
-      {/* Live Gemini Synthesis Indicator Banner */}
+      {/* Warm Consumer Loading Indicator */}
       {geminiTelemetry.isGenerating && (
-        <div className="bg-emerald-950 text-emerald-100 border-b border-emerald-800 px-4 py-2.5 flex items-center gap-2.5 text-xs">
-          <Loader2 className="w-4 h-4 text-emerald-400 animate-spin shrink-0" />
-          <div className="min-w-0">
-            <span className="font-semibold text-white">
-              Calling Cloudtop Gemini API ({geminiTelemetry.model})...
-            </span>{' '}
-            <span className="text-emerald-200/90">
-              Synthesizing declarative A2UI v1.0 surface envelopes with live store SKUs &amp; cart context.
-            </span>
-          </div>
+        <div className="bg-emerald-50/90 text-emerald-950 border-b border-emerald-200/80 px-5 py-3 flex items-center gap-3 text-xs">
+          <Loader2 className="w-4 h-4 text-[#0AAD0A] animate-spin shrink-0" />
+          <span className="font-medium text-emerald-900">
+            Personalizing ideas for your kitchen...
+          </span>
         </div>
       )}
 
-      {/* Gemini Error Notice (if any) */}
-      {geminiTelemetry.error && !geminiTelemetry.isGenerating && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between gap-2 text-xs text-amber-900">
-          <div className="flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>
-              Gemini notice: {geminiTelemetry.error} (rendered fallback v1.0 surface)
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setGeminiTelemetry((prev) => ({ ...prev, error: null }))
-            }
-            className="text-amber-700 hover:text-amber-950"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Live Bi-Directional Action Confirmation Banner */}
-      {actionBannerText && (
-        <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2 flex items-center justify-between gap-2 text-xs text-emerald-900">
-          <div className="flex items-center gap-1.5 font-medium">
+      {/* Friendly Action Confirmation Banner */}
+      {actionBannerText && !geminiTelemetry.isGenerating && (
+        <div className="bg-emerald-50 border-b border-emerald-200/80 px-5 py-2.5 flex items-center justify-between gap-2 text-xs text-emerald-900">
+          <div className="flex items-center gap-2 font-medium min-w-0">
             <CheckCircle2 className="w-4 h-4 text-[#0AAD0A] shrink-0" />
-            <span>{actionBannerText}</span>
+            <span className="truncate">{actionBannerText}</span>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
               onClick={() => effectiveActionHandler.openCartDrawer()}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0AAD0A] hover:underline cursor-pointer"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#0AAD0A] hover:underline cursor-pointer"
             >
-              <ShoppingBag className="w-3 h-3" />
+              <ShoppingBag className="w-3.5 h-3.5" />
               View Cart
             </button>
             <button
@@ -1219,21 +1098,21 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         </div>
       )}
 
-      {/* Active A2UI v1.0 Surface Viewport */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Active Surface Viewport */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {activeSurface ? (
           <A2UISurfaceRenderer
             surface={activeSurface}
             onAction={handleSurfaceAction}
             onDataModelChange={handleDataModelChange}
             products={effectiveProducts}
-            showSurfaceBadge={true}
+            showSurfaceBadge={false}
           />
         ) : (
-          <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center space-y-2">
-            <Layers className="w-8 h-8 text-stone-400 mx-auto" />
-            <div className="text-sm font-semibold text-stone-700">
-              Initializing A2UI v1.0 Surface...
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-8 text-center space-y-2">
+            <Loader2 className="w-6 h-6 text-[#0AAD0A] animate-spin mx-auto" />
+            <div className="text-sm font-medium text-stone-600">
+              Preparing your shopping recommendations...
             </div>
           </div>
         )}

@@ -135,7 +135,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
     }
     if (optimizationLinks.backup?.id === candidate.id) {
       return {
-        label: 'AI Top Match Backup',
+        label: 'Recommended Backup',
         className: 'bg-amber-50 text-amber-800 border-amber-200',
       };
     }
@@ -272,7 +272,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               />
               <div className="flex-1">
                 <div className="text-sm font-semibold text-stone-900">
-                  Choose a specific replacement SKU
+                  Choose a specific replacement item
                 </div>
                 <p className="text-xs text-stone-600 mt-0.5">
                   Pick the exact pre-approved backup item below.

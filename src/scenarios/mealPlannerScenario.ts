@@ -237,8 +237,8 @@ export function buildMealPlannerDataModel(options: MealPlannerOptions = {}): Rec
       ? '## Mediterranean Herb Salmon & Quinoa Dinner'
       : '## High-Protein Harvest Chicken & Avocado Bowls',
     recipeSubtitle: isSalmon
-      ? 'Chef-curated 25-min sheet-pan dinner · Live @path scaling & 1-click recipe-to-cart'
-      : 'Macro-balanced meal prep bowls · 48g protein per serving · Mapped to store SKUs',
+      ? 'Chef-curated 25-minute dinner · Adjust servings to scale ingredients automatically'
+      : 'Balanced meal prep bowls · 52g protein per serving · Ready in 20 minutes',
     selectedMealPlan: [styleId],
     servings,
     prepTimeMinutes: isSalmon ? 25 : 20,
@@ -278,7 +278,7 @@ export function buildMealPlannerDataModel(options: MealPlannerOptions = {}): Rec
     estimatedTotal,
     perServingCost: Number((estimatedTotal / servings).toFixed(2)),
     bundleAdded: false,
-    lastActionConfirmation: `Ready: ${ingredients.length} scaled SKUs (${servings} servings)`,
+    lastActionConfirmation: `${ingredients.length} fresh ingredients ready for ${servings} servings`,
   };
 }
 
@@ -343,7 +343,7 @@ export function buildMealPlannerComponents(): A2UIComponentBase[] {
     {
       id: 'servings_slider',
       component: 'Slider',
-      label: 'Servings Count (scales SKU quantities live)',
+      label: 'Servings (scales ingredient quantities automatically)',
       min: 1,
       max: 12,
       steps: 11,
@@ -399,7 +399,7 @@ export function buildMealPlannerComponents(): A2UIComponentBase[] {
       id: 'ingredients_header_text',
       component: 'Text',
       variant: 'body',
-      text: '### Scaled Store Ingredients (Uncheck items you already have at home)',
+      text: '### Recipe Ingredients (Uncheck items you already have at home)',
     },
     {
       id: 'ingredients_list',
@@ -591,7 +591,7 @@ export function buildMealPlannerComponents(): A2UIComponentBase[] {
       id: 'btn_add_bundle_label',
       component: 'Text',
       variant: 'body',
-      text: 'Add Scaled Recipe Bundle to Cart',
+      text: 'Add Recipe Ingredients to Cart',
     },
   ];
 }
@@ -632,7 +632,7 @@ export function buildMealPlannerStream(options: MealPlannerOptions = {}): A2UIv1
       ],
       dataModel: {
         recipeTitle: fullDataModel.recipeTitle,
-        recipeSubtitle: 'Streaming recipe components & live store SKU bindings...',
+        recipeSubtitle: 'Preparing recipe ingredients for your kitchen...',
         selectedMealPlan: fullDataModel.selectedMealPlan,
         servings: fullDataModel.servings,
         dietary: fullDataModel.dietary,
@@ -640,7 +640,7 @@ export function buildMealPlannerStream(options: MealPlannerOptions = {}): A2UIv1
         ingredients: [],
         featuredPairing: fullDataModel.featuredPairing,
         estimatedTotal: 0,
-        lastActionConfirmation: 'Hydrating A2UI v1.0 surface...',
+        lastActionConfirmation: 'Preparing your recipe...',
       },
     },
   };

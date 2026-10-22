@@ -132,8 +132,8 @@ export const PROMO_CODE_RULES: Record<PromoCodeId, PromoCodeRule> = {
   },
   A2UIV1: {
     code: 'A2UIV1',
-    label: '15% Off (A2UI v1.0 Showcase)',
-    description: '15% off your entire basket + free delivery perk',
+    label: '15% Off + Free Delivery',
+    description: '15% off your entire order plus free delivery',
     discountType: 'percent_all',
     value: 15,
     minSubtotal: 15,
@@ -666,13 +666,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({
       addToast({
         title: bundleTitle
           ? `Added "${bundleTitle}" to Cart`
-          : 'AI Bundle Added to Cart',
-        description: `Added ${resolvedEntries.length} products (${totalUnits} total units) via A2UI v1.0 action.`,
+          : 'Items Added to Cart',
+        description: `Added ${resolvedEntries.length} items (${totalUnits} total) to your ${activeStore.name} cart.`,
         variant: 'success',
         source: 'a2ui-shopper',
       });
     },
-    [activeStoreId, addToast]
+    [activeStoreId, activeStore.name, addToast]
   );
 
   const swapCartItem = useCallback(

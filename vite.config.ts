@@ -339,7 +339,8 @@ STRICT A2UI v1.0 RULES (MANDATORY):
        }
      }
 6. ALWAYS pick 3 to 5 REAL products from the provided availableProducts list, using their exact productId, name, price, unit, and imageUrl!
-7. Include a primary CTA Button at the bottom of the surface with action.event.name = "add_recipe_bundle_to_cart" (and context.items array of { productId, quantity }) or "build_weekly_basket" (with context.recommendedProductIds array of productIds) so clicking it adds the recommended items directly into the user's live FreshCart shopping cart, plus a Text component bound to { "@path": "/statusBanner" } to show cart confirmation.`;
+7. Include a primary CTA Button at the bottom of the surface with action.event.name = "add_recipe_bundle_to_cart" (and context.items array of { productId, quantity }) or "build_weekly_basket" (with context.recommendedProductIds array of productIds) so clicking it adds the recommended items directly into the user's live FreshCart shopping cart, plus a Text component bound to { "@path": "/statusBanner" } to show cart confirmation.
+8. CONSUMER-FRIENDLY COPY RULE: Write warm, natural, appetizing grocery copy in all visible text, headings, labels, badges, and summaries (e.g., "Chef's Pick", "25-Minute Dinner", "Add All Ingredients to Cart"). NEVER output developer or protocol jargon ("A2UI", "v1.0", "@path", "@call", "SKU", "dataModel", or "surface") inside any user-visible string!`;
 }
 
 function geminiA2UIMiddlewarePlugin(): Plugin {

@@ -171,9 +171,9 @@ export function buildBudgetBuilderDataModel(
   const isBudgetValid = allocatedSpend <= weeklyBudget;
 
   return {
-    plannerTitle: '## Weekly Budget & Macro Nutrition Builder',
+    plannerTitle: '## Weekly Budget & Nutrition Planner',
     plannerSubtitle:
-      'Two-way @path bindings + client-side v1.0 `checks` validation (`required`, `numeric`, `length`)',
+      'Set your weekly grocery budget and household nutrition goals',
     weeklyBudget,
     allocatedSpend,
     remainingBudget,
@@ -195,8 +195,8 @@ export function buildBudgetBuilderDataModel(
     curatedBasket,
     basketAdded: false,
     lastActionConfirmation: isBudgetValid
-      ? `All v1.0 validation checks passing · $${remainingBudget.toFixed(2)} under your $${weeklyBudget} cap ✓`
-      : `Over budget by $${Math.abs(remainingBudget).toFixed(2)} — increase budget slider or uncheck items`,
+      ? `Within budget · $${remainingBudget.toFixed(2)} remaining under your $${weeklyBudget} weekly target ✓`
+      : `Over budget by $${Math.abs(remainingBudget).toFixed(2)} — increase your budget or uncheck items`,
   };
 }
 
@@ -314,9 +314,9 @@ export function buildBudgetBuilderComponents(): A2UIComponentBase[] {
       id: 'planner_tabs',
       component: 'Tabs',
       tabs: [
-        { title: '1. Budget & Constraints', child: 'tab_budget_goals' },
-        { title: '2. Macro Targets & Guide', child: 'tab_macro_targets' },
-        { title: '3. Weekly Basket SKUs', child: 'tab_curated_basket' },
+        { title: 'Budget & Goals', child: 'tab_budget_goals' },
+        { title: 'Nutrition Guide', child: 'tab_macro_targets' },
+        { title: 'Weekly Basket', child: 'tab_curated_basket' },
       ],
     },
     {
@@ -425,7 +425,7 @@ export function buildBudgetBuilderComponents(): A2UIComponentBase[] {
     {
       id: 'cb_auto_promo',
       component: 'CheckBox',
-      label: 'Automatically apply promo code A2UIV1 ($10 off $50+) on basket build',
+      label: 'Automatically apply $10 weekly planner savings ($10 off $50+)',
       value: { '@path': '/autoApplyPromo' },
     },
     {
@@ -442,7 +442,7 @@ export function buildBudgetBuilderComponents(): A2UIComponentBase[] {
       id: 'macro_explainer_text',
       component: 'Text',
       variant: 'body',
-      text: '### Daily Macro Allocation Strategy\nYour curated 7-day grocery basket targets **156g daily protein**, **34g prebiotic fiber**, and balanced complex carbohydrates from organic quinoa, wild salmon, pasture-raised eggs, and Greek yogurt.',
+      text: '### Weekly Nutrition Balance\nYour curated 7-day grocery basket targets **156g daily protein**, **34g dietary fiber**, and balanced complex carbohydrates from organic quinoa, wild salmon, pasture-raised eggs, and Greek yogurt.',
     },
     {
       id: 'modal_macro_guide',
@@ -466,7 +466,7 @@ export function buildBudgetBuilderComponents(): A2UIComponentBase[] {
       id: 'btn_open_macro_modal_label',
       component: 'Text',
       variant: 'caption',
-      text: 'View A2UI v1.0 Modal: Macro & Validation Rules Breakdown',
+      text: 'View Weekly Nutrition & Meal Prep Guide',
     },
     {
       id: 'modal_macro_content_col',
@@ -477,13 +477,13 @@ export function buildBudgetBuilderComponents(): A2UIComponentBase[] {
       id: 'modal_macro_title',
       component: 'Text',
       variant: 'body',
-      text: '## Weekly Macro & v1.0 Validation Rules Guide',
+      text: '## Weekly Nutrition & Meal Prep Guide',
     },
     {
       id: 'modal_macro_body',
       component: 'Text',
       variant: 'body',
-      text: 'This surface demonstrates **A2UI v1.0 Checkable validation** (`checks`):\n- Dragging the **Weekly Budget Cap** slider below the allocated basket total ($123.84) flips `/isBudgetValid` to `false` and disables the primary action button.\n- Typing a value outside `10–120` in **Max Daily Cooking Prep Time** triggers the v1.0 `numeric` validation check.\n- Clearing all **Household Goals** triggers the v1.0 `required` check.',
+      text: 'Your curated weekly basket balances lean proteins, heart-healthy omega-3 fats, and high-fiber whole grains:\n- **Wild Alaskan Salmon & Organic Chicken**: 90g+ combined high-quality protein.\n- **Organic Quinoa, Greek Yogurt & Pasture-Raised Eggs**: Steady energy and probiotics for busy mornings.\n- **Fresh Avocados, Spinach & Berries**: Essential micronutrients, antioxidants, and fiber.',
     },
     {
       id: 'tab_curated_basket',
@@ -670,7 +670,7 @@ export function buildBudgetBuilderStream(
       ],
       dataModel: {
         plannerTitle: fullDataModel.plannerTitle,
-        plannerSubtitle: 'Streaming v1.0 Checkable inputs & macro calculations...',
+        plannerSubtitle: 'Preparing your weekly budget & nutrition plan...',
         weeklyBudget: fullDataModel.weeklyBudget,
         allocatedSpend: 0,
         remainingBudget: fullDataModel.weeklyBudget,
@@ -682,7 +682,7 @@ export function buildBudgetBuilderStream(
         promoCodeToApply: 'A2UIV1',
         weeklyNutrition: fullDataModel.weeklyNutrition,
         curatedBasket: [],
-        lastActionConfirmation: 'Evaluating v1.0 checks...',
+        lastActionConfirmation: 'Preparing your weekly plan...',
       },
     },
   };
