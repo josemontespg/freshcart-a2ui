@@ -50,7 +50,7 @@ export interface CompactCartItemContext {
 
 export interface GeminiA2UIRequest {
   prompt: string;
-  scenarioHint?: 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+  scenarioHint?: 'meal-planner' | 'cart-optimizer' | 'budget-builder' | 'skill-generator';
   surfaceId?: string;
   activeStore?: {
     id: StoreId;
@@ -70,6 +70,7 @@ export interface GeminiA2UIResponse {
   summary?: string;
   componentCount: number;
   surfaceId: string;
+  activeSkills?: string[];
 }
 
 export function buildCompactCatalogContext(
@@ -366,7 +367,9 @@ export async function generateA2UISurfaceWithGemini(
       ? 'cart-optimizer-surface'
       : request.scenarioHint === 'budget-builder'
         ? 'budget-nutrition-surface'
-        : 'meal-planner-surface');
+        : request.scenarioHint === 'skill-generator'
+          ? 'skill-chef-surface'
+          : 'meal-planner-surface');
 
   const { envelopes, componentCount, surfaceId } = normalizeGeminiEnvelopes(
     payload.envelopes ?? payload.messages ?? payload,
@@ -390,5 +393,8 @@ export async function generateA2UISurfaceWithGemini(
     summary: typeof payload.summary === 'string' ? payload.summary : undefined,
     componentCount,
     surfaceId,
+    activeSkills: Array.isArray(payload.activeSkills)
+      ? (payload.activeSkills as string[])
+      : undefined,
   };
 }

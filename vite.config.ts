@@ -3,6 +3,10 @@ import path from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import {
+  buildFreshCartSkillBundle,
+  type SkillInferenceFormat,
+} from './src/a2ui/skillGenerator';
 
 const FRESHCART_CATALOG_ID = 'https://freshcart.app/catalogs/grocery/v1/catalog.json';
 const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
@@ -242,8 +246,12 @@ function sanitizeSurfaceEnvelopes(
 }
 
 function buildGeminiSystemInstruction(): string {
+  const skillBundle = buildFreshCartSkillBundle('direct_json');
   return `You are the FreshCart AI Personal Shopper powered by Google Gemini, speaking native A2UI v1.0 protocol.
 Your job is to respond to user grocery requests by generating a rich, interactive A2UI v1.0 UI surface using real store products provided in the prompt context.
+
+DYNAMICALLY COMPILED A2UI v1.0 AGENT SKILL (GENERATED VIA SkillGenerator + @a2ui/web_core Catalog.toJson()):
+${skillBundle.monolithicSkill.markdown}
 
 Return ONLY valid JSON with the following top-level shape:
 {
@@ -337,6 +345,17 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (!req.url) return next();
 
+        if (req.url.startsWith('/api/a2ui/skills') && req.method === 'GET') {
+          const parsedUrl = new URL(req.url, 'http://localhost:5184');
+          const fmtParam = parsedUrl.searchParams.get('format');
+          const format: SkillInferenceFormat =
+            fmtParam === 'express' ? 'express' : 'direct_json';
+          const bundle = buildFreshCartSkillBundle(format);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(bundle));
+          return;
+        }
+
         if (req.url.startsWith('/api/gemini/status') && req.method === 'GET') {
           const cfg = loadCloudtopGeminiKey();
           res.setHeader('Content-Type', 'application/json');
@@ -394,6 +413,7 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
             'meal-planner': 'meal-planner-surface',
             'cart-optimizer': 'cart-optimizer-surface',
             'budget-builder': 'budget-nutrition-surface',
+            'skill-generator': 'skill-chef-surface',
             custom: 'gemini-live-surface',
           };
           const requestedSurfaceId =
@@ -483,6 +503,11 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
                 latencyMs,
                 summary,
                 rawText: geminiResponseText,
+                activeSkills: [
+                  'a2ui-core/SKILL.md',
+                  'a2ui-basic/SKILL.md',
+                  'a2ui-grocery/SKILL.md',
+                ],
               })
             );
           } catch (err) {
@@ -507,13 +532,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), geminiA2UIMiddlewarePlugin()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5184,
     strictPort: true,
     allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5184,
     allowedHosts: true,
   },
 });
