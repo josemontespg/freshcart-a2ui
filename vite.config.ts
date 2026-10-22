@@ -330,6 +330,112 @@ STRICT A2UI v1.0 RULES (MANDATORY):
 8. CONSUMER-FRIENDLY COPY RULE: Write warm, natural, appetizing grocery copy in all visible text, headings, labels, badges, and summaries (e.g., "Chef's Pick", "25-Minute Dinner", "Add All Ingredients to Cart"). NEVER output developer or protocol jargon ("A2UI", "v1.0", "@path", "@call", "SKU", "dataModel", or "surface") inside any user-visible string!`;
 }
 
+/**
+ * Evaluates server-side A2UI v1.0 `callAgentFunction` requests and returns
+ * a compliant `agentFunctionResponse` envelope (`agent_to_renderer.json`).
+ */
+function evaluateServerSideAgentFunction(
+  rpcEnvelope: Record<string, unknown>
+): Record<string, unknown> {
+  const callAgentFn = (rpcEnvelope.callAgentFunction ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const functionCallId =
+    typeof callAgentFn.functionCallId === 'string'
+      ? callAgentFn.functionCallId
+      : `rpc_server_${Date.now()}`;
+  const callFunction = (callAgentFn.callFunction ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const fnName =
+    typeof callFunction['@call'] === 'string'
+      ? callFunction['@call']
+      : 'optimizeLiveStoreCoupons';
+  const args =
+    typeof callFunction.args === 'object' && callFunction.args !== null
+      ? (callFunction.args as Record<string, unknown>)
+      : {};
+
+  if (fnName === 'optimizeLiveStoreCoupons') {
+    const promoCode = String(args.promoCode ?? 'KETO20')
+      .trim()
+      .toUpperCase();
+    const servings = Math.max(1, Number(args.servings ?? 4));
+    const loyaltyMember = Boolean(args.loyaltyMember ?? true);
+    const subtotal = Number(args.subtotal ?? 52.95);
+
+    const digitalCouponSavings = Number((4.5 + servings * 0.75).toFixed(2));
+    const breakdownText = `**Verified 3 Stackable Store Coupons (Save $${digitalCouponSavings.toFixed(2)} extra):**\n- **$3.00 Off** Wild Alaskan Sockeye Salmon (Seafood Aisle Digital Clip)\n- **$${(servings * 0.75).toFixed(2)} Multi-Buy Bonus** (${servings} servings scale)\n- **In-Stock Guarantee:** All 4 items verified in Cold Storage & Produce (${
+      loyaltyMember ? 'FreshCart+ Priority' : 'Standard'
+    } · Code ${promoCode || 'NONE'})`;
+
+    return {
+      version: 'v1.0',
+      agentFunctionResponse: {
+        functionCallId,
+        value: {
+          fnName,
+          serverCouponDiscount: digitalCouponSavings,
+          appliedCoupons: [
+            'SEAFOOD3 ($3.00 Off Wild Sockeye)',
+            `MULTIBUY ($${(servings * 0.75).toFixed(2)} Bundle Bonus)`,
+          ],
+          stockStatus: 'All 4 bundle items verified in stock',
+          dataModelPatch: {
+            serverCouponDiscount: digitalCouponSavings,
+            serverCouponBreakdown: breakdownText,
+            statusBanner: `Live Store Coupons Applied: Extra $${digitalCouponSavings.toFixed(2)} manufacturer savings stacked ✓`,
+          },
+        },
+      },
+    };
+  }
+
+  if (fnName === 'analyzeMealMicronutrients') {
+    const servings = Math.max(1, Number(args.servings ?? 4));
+    const netCarbs = Number(args.netCarbs ?? 11);
+    const rawGoal = args.dietaryGoal;
+    const goal = Array.isArray(rawGoal)
+      ? String(rawGoal[0] ?? 'keto')
+      : String(rawGoal ?? 'keto');
+
+    const omega3Mg = 1840 + servings * 60;
+    const glycemicLoad = Math.max(2, Math.round(netCarbs * 0.35));
+    const summaryText = `**Server Dietitian Report (${servings} servings · ${goal.toUpperCase()}):** ${omega3Mg}mg Omega-3 (EPA+DHA) · Ultra-Low Glycemic Load (**GL ${glycemicLoad}**) · **112% Daily Vitamin D** · **94% Daily Folate & Potassium** ✓`;
+
+    return {
+      version: 'v1.0',
+      agentFunctionResponse: {
+        functionCallId,
+        value: {
+          fnName,
+          omega3Mg,
+          glycemicLoad,
+          vitaminDPercent: 112,
+          folatePercent: 94,
+          dataModelPatch: {
+            serverAuditSummary: summaryText,
+            statusBanner: `Dietitian Micronutrient Audit Complete: GL ${glycemicLoad}, ${omega3Mg}mg Omega-3 ✓`,
+          },
+        },
+      },
+    };
+  }
+
+  return {
+    version: 'v1.0',
+    agentFunctionResponse: {
+      functionCallId,
+      error: {
+        code: 'UNKNOWN_SERVER_FUNCTION',
+        message: `Server function '${fnName}' is not registered on the FreshCart RPC endpoint.`,
+      },
+    },
+  };
+}
+
 function geminiA2UIMiddlewarePlugin(): Plugin {
   return {
     name: 'freshcart-gemini-a2ui-middleware',
@@ -347,6 +453,29 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
               keySource: cfg.keySource,
             })
           );
+          return;
+        }
+
+        // Dedicated A2UI v1.0 Server-Side Function RPC Endpoint (`callAgentFunction` -> `agentFunctionResponse`)
+        if (req.url.startsWith('/api/a2ui/rpc') && req.method === 'POST') {
+          let rawBody = '';
+          for await (const chunk of req) {
+            rawBody += chunk;
+          }
+          let body: Record<string, unknown> = {};
+          try {
+            body = JSON.parse(rawBody || '{}');
+          } catch {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Invalid JSON RPC body' }));
+            return;
+          }
+
+          const responseEnvelope = evaluateServerSideAgentFunction(body);
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(responseEnvelope));
           return;
         }
 
@@ -394,6 +523,7 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
             'meal-planner': 'meal-planner-surface',
             'cart-optimizer': 'cart-optimizer-surface',
             'budget-builder': 'budget-nutrition-surface',
+            'smart-functions': 'smart-functions-surface',
             custom: 'gemini-live-surface',
           };
           const requestedSurfaceId =
@@ -507,13 +637,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), geminiA2UIMiddlewarePlugin()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5187,
     strictPort: true,
     allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5187,
     allowedHosts: true,
   },
 });

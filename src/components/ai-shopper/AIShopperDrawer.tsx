@@ -1,13 +1,22 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Activity,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
+  Code2,
+  RotateCcw,
+  Send,
   Sparkles,
   X,
-  Send,
-  RotateCcw,
+  Zap,
 } from 'lucide-react';
 import {
   A2UI_VERSION,
   type A2UIActionEvent,
+  type A2UICallAgentFunctionMessage,
+  type A2UIRendererFunctionResponseMessage,
   type A2UISurfaceManagerState,
   type A2UISurfaceState,
   type A2UIv1Message,
@@ -22,10 +31,14 @@ import { useCart } from '../../context/CartContext';
 import { PRODUCTS } from '../../data/products';
 import { A2UISurfaceRenderer } from '../../a2ui/A2UISurfaceRenderer';
 import {
+  setClientLiveBridgeSnapshot,
+} from '../../a2ui/DataModelBinder';
+import {
   createInitialSurfaceManagerState,
   mutateSurfaceDataModel,
   processA2UIMessage,
   recordOutboundActionEvent,
+  recordOutboundCallAgentFunction,
 } from '../../a2ui/SurfaceManager';
 import {
   buildMealPlannerStream,
@@ -46,8 +59,15 @@ import {
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
 import {
+  buildSmartFunctionsStream,
+  type SmartBundleItem,
+} from '../../scenarios/smartFunctionsScenario';
+import {
+  buildAgentToRendererInspectionCall,
   buildCompactCartContext,
   buildCompactCatalogContext,
+  buildFollowupDataModelFromRendererResponse,
+  executeServerFunctionRpc,
   generateA2UISurfaceWithGemini,
 } from '../../services/geminiA2UIService';
 import {
@@ -77,8 +97,13 @@ export interface AIShopperDrawerProps {
   initialScenarioId?: ScenarioId;
   activeScenarioId?: ScenarioId;
   onScenarioChange?: (scenarioId: ScenarioId) => void;
-  onDispatchA2UIMessage?: (message: A2UIv1Message, sourceLabel?: string) => void;
+  onDispatchA2UIMessage?: (
+    message: A2UIv1Message,
+    sourceLabel?: string,
+    targetSurfaceId?: string
+  ) => void;
   onRecordOutboundAction?: (event: A2UIActionEvent) => void;
+  onRecordOutboundRpc?: (rpcMessage: A2UICallAgentFunctionMessage) => void;
   onEditDataModelPath?: (
     surfaceId: string,
     path: string,
@@ -90,12 +115,16 @@ export interface AIShopperDrawerProps {
 }
 
 const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
+  'smart-functions':
+    'Calculate live store coupons, net-carb nutrition targets, and personalized kitchen matches for my cart',
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
+  'smart-functions':
+    'Here is your interactive Smart Kitchen Calculator with instant client-side nutrition & promo validation, live server-side coupon RPC, and cart sync:',
   'meal-planner':
     'Here is a chef-curated dinner plan you can customize by servings and dietary preferences:',
   'cart-optimizer':
@@ -155,6 +184,16 @@ function inferScenarioFromPrompt(
 ): ScenarioId {
   const lower = promptText.toLowerCase();
   if (
+    lower.includes('coupon') ||
+    lower.includes('net-carb') ||
+    lower.includes('net carb') ||
+    lower.includes('calculator') ||
+    lower.includes('function') ||
+    lower.includes('rpc')
+  ) {
+    return 'smart-functions';
+  }
+  if (
     lower.includes('swap') ||
     lower.includes('cart') ||
     lower.includes('sav') ||
@@ -201,7 +240,9 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   onScenarioChange,
   onDispatchA2UIMessage,
   onRecordOutboundAction,
+  onRecordOutboundRpc,
   surfaces: externalSurfaces,
+  onOpenProtocolInspector,
 }) => {
   const cartCtx = useCart();
 
@@ -212,22 +253,52 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const effectiveActionHandler: ShopperActionHandler =
     propActionHandler ?? cartCtx;
 
+  // Keep the client live bridge snapshot synchronized for `callRendererFunction`
+  useEffect(() => {
+    const subtotal = effectiveCartItems.reduce(
+      (sum, it) => sum + it.product.price * it.quantity,
+      0
+    );
+    const totalCount = effectiveCartItems.reduce(
+      (sum, it) => sum + it.quantity,
+      0
+    );
+    setClientLiveBridgeSnapshot({
+      cartItemCount: totalCount,
+      cartSubtotal: Number(subtotal.toFixed(2)),
+      activeStoreId: effectiveStoreId,
+      activeStoreName: effectiveStoreName,
+      deliveryEtaMinutes: cartCtx.activeStore.deliveryEtaMinutes,
+      cartItemNames: effectiveCartItems.map((it) => it.product.name),
+    });
+  }, [
+    cartCtx.activeStore.deliveryEtaMinutes,
+    effectiveCartItems,
+    effectiveStoreId,
+    effectiveStoreName,
+  ]);
+
   const [internalManagerState, setInternalManagerState] =
     useState<A2UISurfaceManagerState>(() => createInitialSurfaceManagerState());
 
   const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRpcTelemetryOpen, setIsRpcTelemetryOpen] = useState(false);
 
   const turnCounterRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const dispatchMessage = useCallback(
-    (message: A2UIv1Message, sourceLabel?: string) => {
+    (
+      message: A2UIv1Message,
+      sourceLabel?: string,
+      targetSurfaceId?: string
+    ) => {
       setInternalManagerState((prev) =>
-        processA2UIMessage(prev, message, { sourceLabel })
+        processA2UIMessage(prev, message, { sourceLabel, targetSurfaceId })
       );
-      onDispatchA2UIMessage?.(message, sourceLabel);
+      onDispatchA2UIMessage?.(message, sourceLabel, targetSurfaceId);
     },
     [onDispatchA2UIMessage]
   );
@@ -236,7 +307,11 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     (envelopes: A2UIv1Message[], surfaceId: string, label: string) => {
       const boundEnvelopes = rewriteEnvelopesSurfaceId(envelopes, surfaceId);
       boundEnvelopes.forEach((msg, idx) => {
-        dispatchMessage(msg, `${label} [${idx + 1}/${boundEnvelopes.length}]`);
+        dispatchMessage(
+          msg,
+          `${label} [${idx + 1}/${boundEnvelopes.length}]`,
+          surfaceId
+        );
       });
     },
     [dispatchMessage]
@@ -247,6 +322,14 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'smart-functions') {
+        return buildSmartFunctionsStream(
+          effectiveCartItems,
+          effectiveProducts,
+          effectiveStoreId
+        );
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -325,7 +408,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       {
         id: `turn_${turnCounterRef.current}`,
         role: 'assistant',
-        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Tell me what you'd like to cook, ask for a weekly meal plan, or let me find savings in your cart.`,
+        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Click "⚡ Smart Coupons & Nutrition Calculator" below to try live client & server functions, or ask for a meal plan or cart savings.`,
         surfaceId: initSurfaceId,
         scenarioHint: initialScen,
       },
@@ -367,9 +450,17 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         },
       ]);
 
-      if (preferBlueprintInstant) {
+      // Always render the Smart Functions showcase blueprint deterministically so all 3
+      // Client/Server/Agent->Renderer RPC tabs and interactive controls are immediately live
+      if (preferBlueprintInstant || scenarioHint === 'smart-functions') {
         const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
-        dispatchEnvelopesForSurface(envelopes, surfaceId, 'Quick Action');
+        dispatchEnvelopesForSurface(
+          envelopes,
+          surfaceId,
+          scenarioHint === 'smart-functions'
+            ? 'Smart Functions Showcase'
+            : 'Quick Action'
+        );
         setChatTurns((prev) => [
           ...prev,
           {
@@ -493,7 +584,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       {
         id: `turn_${turnCounterRef.current}`,
         role: 'assistant',
-        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Tell me what you'd like to cook, ask for a weekly meal plan, or let me find savings in your cart.`,
+        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Click "⚡ Smart Coupons & Nutrition Calculator" below to try live client & server functions, or ask for a meal plan or cart savings.`,
         surfaceId: resetSurfaceId,
         scenarioHint: 'meal-planner',
       },
@@ -540,7 +631,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: recalculated,
             },
           },
-          `Recipe Recalculation (${pointerPath})`
+          `Recipe Recalculation (${pointerPath})`,
+          surfaceId
         );
       } else if (Array.isArray(nextModel.curatedBasket)) {
         const recalculated = recalculateBudgetBuilderDataModel(
@@ -557,7 +649,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: recalculated,
             },
           },
-          `Budget Recalculation (${pointerPath})`
+          `Budget Recalculation (${pointerPath})`,
+          surfaceId
         );
       } else {
         dispatchMessage(
@@ -569,11 +662,65 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value,
             },
           },
-          `Input (${pointerPath})`
+          `Input (${pointerPath})`,
+          surfaceId
         );
       }
     },
     [dispatchMessage, effectiveProducts, mergedSurfaces]
+  );
+
+  // Handle synchronous client-side function patches (`action.functionCall` with executionTarget='client')
+  const handleLocalFunctionPatch = useCallback(
+    (
+      surfaceId: string,
+      patch: Record<string, unknown>,
+      sourceLabel: string
+    ) => {
+      const currentSurface = mergedSurfaces[surfaceId];
+      if (!currentSurface) return;
+      dispatchMessage(
+        {
+          version: A2UI_VERSION,
+          updateDataModel: {
+            surfaceId,
+            path: '/',
+            value: {
+              ...currentSurface.dataModel,
+              ...patch,
+            },
+          },
+        },
+        sourceLabel,
+        surfaceId
+      );
+    },
+    [dispatchMessage, mergedSurfaces]
+  );
+
+  // Handle outbound Server-Side Function RPC (`callAgentFunction` -> `agentFunctionResponse`)
+  const handleCallAgentFunction = useCallback(
+    async (rpcMessage: A2UICallAgentFunctionMessage) => {
+      const surfaceId = rpcMessage.callAgentFunction.surfaceId;
+      const fnName = rpcMessage.callAgentFunction.callFunction['@call'];
+
+      setInternalManagerState((prev) =>
+        recordOutboundCallAgentFunction(
+          prev,
+          rpcMessage,
+          `Renderer -> Agent RPC (${fnName})`
+        )
+      );
+      onRecordOutboundRpc?.(rpcMessage);
+
+      const agentResponse = await executeServerFunctionRpc(rpcMessage);
+      dispatchMessage(
+        agentResponse,
+        `Agent RPC Response (${fnName})`,
+        surfaceId
+      );
+    },
+    [dispatchMessage, onRecordOutboundRpc]
   );
 
   // Handle outbound A2UIActionEvent dispatches from any surface in the chat thread
@@ -585,6 +732,155 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const { name, surfaceId, context } = event.action;
       const currentSurface = mergedSurfaces[surfaceId];
       const currentModel = currentSurface?.dataModel ?? {};
+
+      // Feature 07: Agent-Initiated Client Inspection (`callRendererFunction` -> `rendererFunctionResponse`)
+      if (name === 'trigger_agent_call_renderer_function') {
+        const callRendererMsg = buildAgentToRendererInspectionCall(
+          surfaceId,
+          'sync_cart',
+          context.dietaryGoal ?? currentModel.dietaryGoal
+        );
+
+        let capturedResponse: A2UIRendererFunctionResponseMessage | undefined;
+        setInternalManagerState((prev) => {
+          const nextState = processA2UIMessage(prev, callRendererMsg, {
+            sourceLabel: 'Agent -> Renderer RPC (getClientKitchenAndCartMetrics)',
+            targetSurfaceId: surfaceId,
+          });
+          const lastOutbound =
+            nextState.outboundResponses[nextState.outboundResponses.length - 1];
+          if (lastOutbound && 'rendererFunctionResponse' in lastOutbound) {
+            capturedResponse = lastOutbound;
+          }
+          return nextState;
+        });
+        onDispatchA2UIMessage?.(
+          callRendererMsg,
+          'Agent -> Renderer RPC (getClientKitchenAndCartMetrics)',
+          surfaceId
+        );
+
+        // Now complete the round-trip by streaming the Agent's tailored updateDataModel based on the client response
+        const tempEvalState = processA2UIMessage(
+          {
+            surfaces: currentSurface ? { [surfaceId]: currentSurface } : {},
+            log: [],
+            outboundResponses: [],
+          },
+          callRendererMsg,
+          { targetSurfaceId: surfaceId }
+        );
+        const latestOutbound =
+          capturedResponse ??
+          (tempEvalState.outboundResponses.find(
+            (r): r is A2UIRendererFunctionResponseMessage =>
+              'rendererFunctionResponse' in r
+          ) as A2UIRendererFunctionResponseMessage | undefined);
+
+        if (latestOutbound) {
+          const followupMsg = buildFollowupDataModelFromRendererResponse(
+            surfaceId,
+            latestOutbound,
+            tempEvalState.surfaces[surfaceId]?.dataModel ?? currentModel
+          );
+          if (followupMsg) {
+            dispatchMessage(
+              followupMsg,
+              'Agent Follow-Up after rendererFunctionResponse',
+              surfaceId
+            );
+          }
+        }
+        return;
+      }
+
+      // Feature 07: Security Boundary Test (Agent attempts `callRendererFunction` on a `rendererOnly` function)
+      if (name === 'trigger_unauthorized_renderer_function') {
+        const unauthorizedCallMsg = buildAgentToRendererInspectionCall(
+          surfaceId,
+          'test_security_guard'
+        );
+        dispatchMessage(
+          unauthorizedCallMsg,
+          'Agent -> Renderer Security Test (rendererOnly Violation)',
+          surfaceId
+        );
+        return;
+      }
+
+      if (name === 'add_single_smart_item') {
+        const productId = String(context.productId ?? 'prod-salmon-fillet');
+        const qty = Math.max(1, Number(context.quantity ?? 1));
+        const title = String(context.title ?? 'Smart Pick');
+        effectiveActionHandler.addItemToCart(
+          productId,
+          qty,
+          'Added from Smart Kitchen Calculator'
+        );
+        const confirmMsg = `Added ${qty}x ${title} to your cart ✓`;
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/statusBanner',
+              value: confirmMsg,
+            },
+          },
+          'Smart Item Added',
+          surfaceId
+        );
+        return;
+      }
+
+      if (name === 'add_smart_functions_bundle_to_cart') {
+        const rawItems = Array.isArray(context.items)
+          ? (context.items as SmartBundleItem[])
+          : Array.isArray(currentModel.bundleItems)
+            ? (currentModel.bundleItems as SmartBundleItem[])
+            : [];
+        const bundleList = rawItems
+          .filter((it) => it.included !== false)
+          .map((it) => ({
+            productId: it.productId,
+            quantity: Math.max(1, Number(it.quantity ?? 1)),
+          }));
+
+        if (bundleList.length > 0) {
+          effectiveActionHandler.addBundleToCart(
+            bundleList,
+            'Smart Kitchen Bundle'
+          );
+        }
+
+        const promoCode = String(
+          context.promoCode ?? currentModel.promoCodeInput ?? 'KETO20'
+        )
+          .trim()
+          .toUpperCase();
+        if (promoCode) {
+          effectiveActionHandler.applyPromoCode('A2UIV1');
+        }
+
+        const confirmText = `Added ${bundleList.length} bundle items + applied promo ${promoCode} to your cart ✓`;
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: {
+                ...currentModel,
+                bundleAdded: true,
+                statusBanner: confirmText,
+              },
+            },
+          },
+          'Smart Bundle & Coupon Added',
+          surfaceId
+        );
+        return;
+      }
 
       if (name === 'add_recipe_bundle_to_cart') {
         const servings = Number(context.servings ?? currentModel.servings ?? 4);
@@ -634,7 +930,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 },
               },
             },
-            'Recipe Bundle Added'
+            'Recipe Bundle Added',
+            surfaceId
           );
         }
         return;
@@ -656,7 +953,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: swappedModel,
             },
           },
-          `Swap Ingredient #${idx + 1}`
+          `Swap Ingredient #${idx + 1}`,
+          surfaceId
         );
         return;
       }
@@ -682,7 +980,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: confirmText,
             },
           },
-          'Chef Pairing Added'
+          'Chef Pairing Added',
+          surfaceId
         );
         return;
       }
@@ -714,7 +1013,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: updatedModel,
             },
           },
-          `Cart Swap (${replacementName})`
+          `Cart Swap (${replacementName})`,
+          surfaceId
         );
         return;
       }
@@ -750,7 +1050,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: updatedModel,
             },
           },
-          'All Cart Optimizations Applied'
+          'All Cart Optimizations Applied',
+          surfaceId
         );
         return;
       }
@@ -801,7 +1102,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               },
             },
           },
-          'Weekly Basket Added'
+          'Weekly Basket Added',
+          surfaceId
         );
         return;
       }
@@ -828,7 +1130,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               value: confirmText,
             },
           },
-          name
+          name,
+          surfaceId
         );
         return;
       }
@@ -874,7 +1177,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 value: confirmText,
               },
             },
-            name
+            name,
+            surfaceId
           );
         }
       }
@@ -884,6 +1188,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       effectiveActionHandler,
       effectiveProducts,
       mergedSurfaces,
+      onDispatchA2UIMessage,
       onRecordOutboundAction,
     ]
   );
@@ -896,6 +1201,18 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     void sendUserMessage(text);
   };
 
+  // Filter RPC & Function logs for the live telemetry drawer
+  const rpcLogEntries = useMemo(() => {
+    return internalManagerState.log.filter(
+      (entry) =>
+        entry.kind === 'callAgentFunction' ||
+        entry.kind === 'agentFunctionResponse' ||
+        entry.kind === 'callRendererFunction' ||
+        entry.kind === 'rendererFunctionResponse' ||
+        (entry.sourceLabel && entry.sourceLabel.includes('Client Function'))
+    );
+  }, [internalManagerState.log]);
+
   if (!isOpen) return null;
 
   const containerClasses =
@@ -905,7 +1222,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
 
   return (
     <aside className={containerClasses} aria-label="AI Personal Shopper Chat">
-      {/* Minimal Chat Header */}
+      {/* Chat Header */}
       <div className="bg-white border-b border-stone-200/80 px-4 py-3.5 flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-full bg-[#0AAD0A] flex items-center justify-center shrink-0 shadow-2xs">
@@ -922,6 +1239,18 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          {onOpenProtocolInspector && (
+            <button
+              type="button"
+              onClick={() => onOpenProtocolInspector()}
+              title="Open Protocol & Function Inspector"
+              aria-label="Open Protocol & Function Inspector"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-800 border border-stone-200/80 transition-colors cursor-pointer"
+            >
+              <Code2 className="w-3.5 h-3.5 text-[#0AAD0A]" />
+              <span>Inspector</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleResetChat}
@@ -980,6 +1309,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                       surface={surfaceState}
                       onAction={handleSurfaceAction}
                       onDataModelChange={handleDataModelChange}
+                      onLocalFunctionPatch={handleLocalFunctionPatch}
+                      onCallAgentFunction={handleCallAgentFunction}
                       products={effectiveProducts}
                       showSurfaceBadge={false}
                     />
@@ -1010,6 +1341,72 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         <div ref={chatEndRef} />
       </div>
 
+      {/* Collapsible Live Function & RPC Telemetry Drawer (appears when RPC or Client Functions run) */}
+      {rpcLogEntries.length > 0 && (
+        <div className="border-t border-slate-800 bg-slate-950 text-slate-100 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsRpcTelemetryOpen((prev) => !prev)}
+            className="w-full px-3.5 py-2 flex items-center justify-between text-xs font-semibold hover:bg-slate-900 transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-emerald-400" />
+              <span>
+                Function &amp; RPC Envelope Log ({rpcLogEntries.length} events)
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-300">
+              <span>{isRpcTelemetryOpen ? 'Hide JSON' : 'Inspect JSON'}</span>
+              {isRpcTelemetryOpen ? (
+                <ChevronDown className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronUp className="w-3.5 h-3.5" />
+              )}
+            </div>
+          </button>
+
+          {isRpcTelemetryOpen && (
+            <div className="max-h-48 overflow-y-auto px-3 pb-2.5 space-y-2 border-t border-slate-800 pt-2">
+              {rpcLogEntries
+                .slice()
+                .reverse()
+                .map((entry) => {
+                  const isInbound = entry.direction === 'agent_to_renderer';
+                  return (
+                    <div
+                      key={entry.id}
+                      className="rounded-xl border border-slate-800 bg-slate-900/90 p-2.5 text-[11px]"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span
+                          className={`inline-flex items-center gap-1 font-mono font-bold uppercase px-1.5 py-0.5 rounded text-[10px] ${
+                            isInbound
+                              ? 'bg-emerald-500/20 text-emerald-300'
+                              : 'bg-indigo-500/20 text-indigo-300'
+                          }`}
+                        >
+                          {isInbound ? (
+                            <ArrowDownLeft className="w-3 h-3" />
+                          ) : (
+                            <ArrowUpRight className="w-3 h-3" />
+                          )}
+                          {entry.kind}
+                        </span>
+                        <span className="text-slate-400 truncate">
+                          {entry.sourceLabel}
+                        </span>
+                      </div>
+                      <pre className="overflow-x-auto font-mono text-[10px] text-emerald-200/90 leading-snug">
+                        {JSON.stringify(entry.payload, null, 2)}
+                      </pre>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Bottom Chat Composer + Quick Suggestion Pills */}
       <div className="bg-white border-t border-stone-200/80 p-3 space-y-2.5 shrink-0">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
@@ -1019,11 +1416,20 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               type="button"
               disabled={isGenerating}
               onClick={() =>
-                void sendUserMessage(chip.label, chip.scenarioId)
+                void sendUserMessage(
+                  chip.label,
+                  chip.scenarioId,
+                  chip.scenarioId === 'smart-functions'
+                )
               }
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70 transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer"
+              className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer ${
+                chip.featured
+                  ? 'bg-emerald-50 text-[#073E1E] border-[#0AAD0A]/50 hover:bg-emerald-100/80 shadow-2xs'
+                  : 'bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border-stone-200/70'
+              }`}
             >
-              {chip.label}
+              {chip.featured && <Zap className="w-3.5 h-3.5 text-[#0AAD0A]" />}
+              <span>{chip.label}</span>
             </button>
           ))}
         </div>
@@ -1034,7 +1440,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
             value={inputValue}
             disabled={isGenerating}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask for a recipe, meal plan, or cart swap..."
+            placeholder="Ask for live store coupons, net-carb calculator, or a meal plan..."
             aria-label="Message AI Personal Shopper"
             className="w-full text-sm bg-stone-100/80 border border-stone-200/90 focus:border-[#0AAD0A] focus:bg-white rounded-full pl-4 pr-11 py-2.5 text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/15 transition-all disabled:opacity-60"
           />

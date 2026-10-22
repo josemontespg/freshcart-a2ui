@@ -16,6 +16,7 @@ import type {
 import type {
   A2UIv1Message,
   A2UIActionEvent,
+  A2UICallAgentFunctionMessage,
   A2UISurfaceManagerState,
 } from './types/a2ui-v1';
 import { STORES } from './data/stores';
@@ -35,11 +36,14 @@ import {
   AIShopperDrawer,
   type ScenarioId,
 } from './components/ai-shopper/AIShopperDrawer';
+import { ProtocolInspectorDrawer } from './a2ui/inspector/ProtocolInspectorDrawer';
 import {
+  clearProtocolLog,
   createInitialSurfaceManagerState,
   processA2UIMessage,
   mutateSurfaceDataModel,
   recordOutboundActionEvent,
+  recordOutboundCallAgentFunction,
 } from './a2ui/SurfaceManager';
 
 const FreshCartWorkspace: React.FC = () => {
@@ -68,8 +72,10 @@ const FreshCartWorkspace: React.FC = () => {
 
   // AI Personal Shopper & Surface Manager state
   const [isAIShopperOpen, setIsAIShopperOpen] = useState<boolean>(true);
+  const [isProtocolInspectorOpen, setIsProtocolInspectorOpen] =
+    useState<boolean>(false);
   const [activeScenarioId, setActiveScenarioId] =
-    useState<ScenarioId>('meal-planner');
+    useState<ScenarioId>('smart-functions');
 
   const [surfaceManagerState, setSurfaceManagerState] =
     useState<A2UISurfaceManagerState>(() => createInitialSurfaceManagerState());
@@ -145,9 +151,13 @@ const FreshCartWorkspace: React.FC = () => {
 
   // A2UI v1.0 message dispatchers
   const handleDispatchA2UIMessage = useCallback(
-    (message: A2UIv1Message, sourceLabel?: string) => {
+    (
+      message: A2UIv1Message,
+      sourceLabel?: string,
+      targetSurfaceId?: string
+    ) => {
       setSurfaceManagerState((prev) =>
-        processA2UIMessage(prev, message, { sourceLabel })
+        processA2UIMessage(prev, message, { sourceLabel, targetSurfaceId })
       );
     },
     []
@@ -156,6 +166,15 @@ const FreshCartWorkspace: React.FC = () => {
   const handleRecordOutboundAction = useCallback((event: A2UIActionEvent) => {
     setSurfaceManagerState((prev) => recordOutboundActionEvent(prev, event));
   }, []);
+
+  const handleRecordOutboundRpc = useCallback(
+    (rpcMessage: A2UICallAgentFunctionMessage) => {
+      setSurfaceManagerState((prev) =>
+        recordOutboundCallAgentFunction(prev, rpcMessage)
+      );
+    },
+    []
+  );
 
   const handleEditDataModelPath = useCallback(
     (surfaceId: string, pointerPath: string, value: unknown) => {
@@ -221,6 +240,8 @@ const FreshCartWorkspace: React.FC = () => {
           isAIShopperOpen={isAIShopperOpen}
           onToggleAIShopper={() => setIsAIShopperOpen((prev) => !prev)}
           onLaunchScenario={handleLaunchScenario}
+          onOpenProtocolInspector={() => setIsProtocolInspectorOpen(true)}
+          protocolLogCount={surfaceManagerState.log.length}
         />
 
         {/* Live Order Tracker Banner (renders automatically when an order is placed) */}
@@ -302,11 +323,26 @@ const FreshCartWorkspace: React.FC = () => {
             onScenarioChange={setActiveScenarioId}
             onDispatchA2UIMessage={handleDispatchA2UIMessage}
             onRecordOutboundAction={handleRecordOutboundAction}
+            onRecordOutboundRpc={handleRecordOutboundRpc}
             onEditDataModelPath={handleEditDataModelPath}
             surfaces={surfaceManagerState.surfaces}
+            onOpenProtocolInspector={() => setIsProtocolInspectorOpen(true)}
           />
         </aside>
       )}
+
+      {/* A2UI v1.0 Protocol & Function Inspector Drawer */}
+      <ProtocolInspectorDrawer
+        isOpen={isProtocolInspectorOpen}
+        onClose={() => setIsProtocolInspectorOpen(false)}
+        surfaces={surfaceManagerState.surfaces}
+        protocolLog={surfaceManagerState.log}
+        onInjectMessage={handleDispatchA2UIMessage}
+        onEditDataModelPath={handleEditDataModelPath}
+        onClearLog={() =>
+          setSurfaceManagerState((prev) => clearProtocolLog(prev))
+        }
+      />
 
       {/* Product Detail Modal (Nutrition Facts & Smart Alternatives) */}
       <ProductDetailModal

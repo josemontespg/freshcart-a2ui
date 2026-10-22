@@ -3,18 +3,21 @@ import {
   A2UI_VERSION,
   FRESHCART_GROCERY_CATALOG_ID,
   type A2UIActionEvent,
+  type A2UICallAgentFunctionMessage,
   type A2UIComponentBase,
   type A2UIEnvelopeKind,
   type A2UILinterDiagnostic,
   type A2UIProtocolLogEntry,
   type A2UIRendererErrorEvent,
+  type A2UIRendererFunctionResponseMessage,
   type A2UISurfaceManagerState,
   type A2UISurfaceState,
   type A2UIv1Message,
 } from '../types/a2ui-v1';
 import {
   createRootEvaluationContext,
-  evaluateFunctionCall,
+  evaluateFunctionCallWithPolicy,
+  getCatalogFunctionMetadata,
   unescapePointerToken,
 } from './DataModelBinder';
 
@@ -185,12 +188,14 @@ export function processA2UIMessage(
   options?: {
     sourceLabel?: string;
     strictSurfaceUniqueness?: boolean;
+    targetSurfaceId?: string;
   }
 ): A2UISurfaceManagerState {
   const nowIso = new Date().toISOString();
   const { id, seq } = nextLogId();
   const nextSurfaces = { ...state.surfaces };
   const nextOutbound = [...state.outboundResponses];
+  const extraFollowupLogs: A2UIProtocolLogEntry[] = [];
 
   if (!message || message.version !== A2UI_VERSION) {
     const errEvent: A2UIRendererErrorEvent = {
@@ -222,7 +227,9 @@ export function processA2UIMessage(
     };
   }
 
-  const { kind, surfaceId } = detectEnvelopeKind(message);
+  const detected = detectEnvelopeKind(message);
+  const kind = detected.kind;
+  const surfaceId = detected.surfaceId ?? options?.targetSurfaceId;
 
   if ('createSurface' in message) {
     const payload = message.createSurface;
@@ -326,32 +333,148 @@ export function processA2UIMessage(
       A2UI_BASIC_CATALOG_ID,
       FRESHCART_GROCERY_CATALOG_ID,
     ]);
+
+    let responseEnvelope: A2UIRendererFunctionResponseMessage;
+
     if (!callFunction.catalogId || !knownCatalogs.has(callFunction.catalogId)) {
-      const errEvent: A2UIRendererErrorEvent = {
-        version: A2UI_VERSION,
-        error: {
-          code: 'INVALID_FUNCTION_CALL',
-          functionCallId,
-          message: `Unknown or unauthorized catalogId '${callFunction.catalogId}' for callRendererFunction.`,
-        },
-      };
-      nextOutbound.push(errEvent);
-    } else {
-      const targetSurface = targetSurfaceId
-        ? nextSurfaces[targetSurfaceId]
-        : undefined;
-      const evalCtx = createRootEvaluationContext(
-        targetSurface?.dataModel ?? {},
-        callFunction.catalogId
-      );
-      const returnVal = evaluateFunctionCall(callFunction, evalCtx);
-      nextOutbound.push({
+      responseEnvelope = {
         version: A2UI_VERSION,
         rendererFunctionResponse: {
           functionCallId,
-          value: returnVal,
+          error: {
+            code: 'INVALID_FUNCTION_CALL',
+            message: `Unknown or unauthorized catalogId '${callFunction.catalogId}' for callRendererFunction.`,
+          },
         },
-      });
+      };
+    } else {
+      // Per A2UI v1.0 spec (`agent_to_renderer.json` & `a2ui_protocol.md` line 183):
+      // When surfaceId is provided, evaluate against that surface's root DataModel;
+      // when omitted, evaluate against an isolated empty root DataModel `{}`.
+      const targetSurface = targetSurfaceId
+        ? nextSurfaces[targetSurfaceId]
+        : undefined;
+      const evalCtx = {
+        ...createRootEvaluationContext(
+          targetSurface?.dataModel ?? {},
+          callFunction.catalogId
+        ),
+        callerKind: 'agent' as const,
+        isUserActivated: false,
+      };
+
+      const outcome = evaluateFunctionCallWithPolicy(callFunction, evalCtx);
+      if (!outcome.ok && outcome.error) {
+        responseEnvelope = {
+          version: A2UI_VERSION,
+          rendererFunctionResponse: {
+            functionCallId,
+            error: outcome.error,
+          },
+        };
+      } else {
+        responseEnvelope = {
+          version: A2UI_VERSION,
+          rendererFunctionResponse: {
+            functionCallId,
+            value: outcome.value,
+          },
+        };
+      }
+
+      if (targetSurface && targetSurfaceId) {
+        const currentModel = targetSurface.dataModel;
+        const fnName = callFunction['@call'];
+        const updatedModel: Record<string, unknown> = {
+          ...currentModel,
+          lastRendererRpcCall: {
+            functionCallId,
+            fnName,
+            catalogId: callFunction.catalogId,
+            status: outcome.ok ? 'resolved' : 'rejected',
+            resultOrError: outcome.ok ? outcome.value : outcome.error,
+            timestamp: nowIso,
+          },
+        };
+        if (!outcome.ok && outcome.error) {
+          updatedModel.securityBoundaryStatus = `Blocked unauthorized callRendererFunction to '${fnName}' (allowedCallers='rendererOnly') -> returned code '${outcome.error.code}' ✓`;
+          updatedModel.statusBanner = `Security Guard Verified: Rejected remote agent call to rendererOnly function '${fnName}' (${outcome.error.code}) ✓`;
+        }
+        nextSurfaces[targetSurfaceId] = {
+          ...targetSurface,
+          dataModel: updatedModel,
+          updatedAt: nowIso,
+        };
+      }
+    }
+
+    nextOutbound.push(responseEnvelope);
+    const outLogMeta = nextLogId();
+    extraFollowupLogs.push({
+      id: outLogMeta.id,
+      seq: outLogMeta.seq,
+      timestamp: nowIso,
+      direction: 'renderer_to_agent',
+      kind: 'rendererFunctionResponse',
+      surfaceId: targetSurfaceId,
+      sourceLabel: `Renderer RPC Response (${callFunction['@call']})`,
+      payload: cloneDeep(responseEnvelope),
+      surfaceSnapshotAfter:
+        targetSurfaceId && nextSurfaces[targetSurfaceId]
+          ? cloneDeep(nextSurfaces[targetSurfaceId])
+          : null,
+    });
+  } else if ('agentFunctionResponse' in message) {
+    const { functionCallId, value, error } = message.agentFunctionResponse;
+    const resolvedSurfaceId =
+      surfaceId ?? Object.keys(nextSurfaces)[Object.keys(nextSurfaces).length - 1];
+    const targetSurface = resolvedSurfaceId
+      ? nextSurfaces[resolvedSurfaceId]
+      : undefined;
+
+    if (targetSurface && resolvedSurfaceId) {
+      const currentModel = targetSurface.dataModel;
+      const existingRpcResults =
+        typeof currentModel.rpcResults === 'object' &&
+        currentModel.rpcResults !== null
+          ? (currentModel.rpcResults as Record<string, unknown>)
+          : {};
+
+      const valueObj =
+        typeof value === 'object' && value !== null && !Array.isArray(value)
+          ? (value as Record<string, unknown>)
+          : {};
+      const fnName =
+        typeof valueObj.fnName === 'string'
+          ? valueObj.fnName
+          : functionCallId;
+
+      const modelPatch =
+        typeof valueObj.dataModelPatch === 'object' &&
+        valueObj.dataModelPatch !== null
+          ? (valueObj.dataModelPatch as Record<string, unknown>)
+          : {};
+
+      nextSurfaces[resolvedSurfaceId] = {
+        ...targetSurface,
+        dataModel: {
+          ...currentModel,
+          ...modelPatch,
+          rpcResults: {
+            ...existingRpcResults,
+            [fnName]: value ?? error,
+          },
+          lastAgentRpcResponse: {
+            functionCallId,
+            fnName,
+            status: error ? 'error' : 'resolved',
+            value,
+            error,
+            timestamp: nowIso,
+          },
+        },
+        updatedAt: nowIso,
+      };
     }
   }
 
@@ -375,7 +498,7 @@ export function processA2UIMessage(
   return {
     surfaces: nextSurfaces,
     outboundResponses: nextOutbound,
-    log: [...state.log, logEntry],
+    log: [...state.log, logEntry, ...extraFollowupLogs],
   };
 }
 
@@ -441,6 +564,35 @@ export function recordOutboundActionEvent(
   };
 }
 
+/**
+ * Records an outbound `renderer_to_agent` `callAgentFunction` RPC message in the protocol log.
+ */
+export function recordOutboundCallAgentFunction(
+  state: A2UISurfaceManagerState,
+  rpcMessage: A2UICallAgentFunctionMessage,
+  sourceLabel: string = 'Renderer -> Agent RPC (callAgentFunction)'
+): A2UISurfaceManagerState {
+  const { id, seq } = nextLogId();
+  const surfaceId = rpcMessage.callAgentFunction.surfaceId;
+  const targetSurface = state.surfaces[surfaceId];
+  const logEntry: A2UIProtocolLogEntry = {
+    id,
+    seq,
+    timestamp: new Date().toISOString(),
+    direction: 'renderer_to_agent',
+    kind: 'callAgentFunction',
+    surfaceId,
+    sourceLabel,
+    payload: cloneDeep(rpcMessage),
+    surfaceSnapshotAfter: targetSurface ? cloneDeep(targetSurface) : null,
+  };
+  return {
+    ...state,
+    outboundResponses: [...state.outboundResponses, rpcMessage],
+    log: [...state.log, logEntry],
+  };
+}
+
 export function clearProtocolLog(
   state: A2UISurfaceManagerState
 ): A2UISurfaceManagerState {
@@ -456,7 +608,8 @@ const UAX31_IDENTIFIER_REGEX = /^[\p{ID_Start}_][\p{ID_Continue}]*$/u;
  * Validates raw JSON text or a parsed object against A2UI v1.0 protocol rules,
  * specifically detecting common v0.8/v0.9 vs v1.0 migration pitfalls discovered
  * during onboarding (`@path` vs `path`, `@call` vs `call`, UAX #31 component IDs,
- * `Text.variant`, `createSurface.theme`, and required `updateDataModel.value`).
+ * `Text.variant`, `createSurface.theme`, required `updateDataModel.value`, and
+ * `callRendererFunction` / `agentFunctionResponse` RPC rules).
  */
 export function validateA2UIv1Envelope(rawJsonText: string): {
   parsed: A2UIv1Message[] | null;
@@ -685,6 +838,77 @@ export function validateA2UIv1Envelope(rawJsonText: string): {
           path: `${envPath}/updateDataModel/value`,
           message: `In A2UI v1.0, 'value' is required on 'updateDataModel'. To delete a key at 'path', set '"value": null' explicitly.`,
           suggestion: `Add "value": null`,
+        });
+      }
+    }
+
+    if (
+      'callRendererFunction' in obj &&
+      obj.callRendererFunction &&
+      typeof obj.callRendererFunction === 'object'
+    ) {
+      const crf = obj.callRendererFunction as Record<string, unknown>;
+      if (typeof crf.functionCallId !== 'string' || !crf.functionCallId) {
+        diagnostics.push({
+          severity: 'error',
+          code: 'MISSING_FUNCTION_CALL_ID',
+          path: `${envPath}/callRendererFunction/functionCallId`,
+          message: `'callRendererFunction.functionCallId' is required in A2UI v1.0.`,
+        });
+      }
+      const cf = crf.callFunction as Record<string, unknown> | undefined;
+      if (!cf || typeof cf !== 'object') {
+        diagnostics.push({
+          severity: 'error',
+          code: 'MISSING_CALL_FUNCTION',
+          path: `${envPath}/callRendererFunction/callFunction`,
+          message: `'callRendererFunction.callFunction' object is required.`,
+        });
+      } else {
+        inspectValueTreeForV09Syntax(cf, `${envPath}/callRendererFunction/callFunction`);
+        if (typeof cf.catalogId !== 'string' || !cf.catalogId) {
+          diagnostics.push({
+            severity: 'error',
+            code: 'MISSING_RPC_CATALOG_ID',
+            path: `${envPath}/callRendererFunction/callFunction/catalogId`,
+            message: `'catalogId' is REQUIRED on 'callRendererFunction.callFunction' per agent_to_renderer.json.`,
+          });
+        }
+        const fnName = typeof cf['@call'] === 'string' ? cf['@call'] : '';
+        const fnMeta = fnName ? getCatalogFunctionMetadata(fnName) : undefined;
+        if (fnMeta && fnMeta.allowedCallers === 'rendererOnly') {
+          diagnostics.push({
+            severity: 'warning',
+            code: 'RPC_RENDERER_ONLY_VIOLATION',
+            path: `${envPath}/callRendererFunction/callFunction/@call`,
+            message: `Function '${fnName}' has allowedCallers='rendererOnly'. The renderer will reject this callRendererFunction with code 'INVALID_FUNCTION_CALL'.`,
+          });
+        }
+      }
+    }
+
+    if (
+      'agentFunctionResponse' in obj &&
+      obj.agentFunctionResponse &&
+      typeof obj.agentFunctionResponse === 'object'
+    ) {
+      const afr = obj.agentFunctionResponse as Record<string, unknown>;
+      if (typeof afr.functionCallId !== 'string' || !afr.functionCallId) {
+        diagnostics.push({
+          severity: 'error',
+          code: 'MISSING_FUNCTION_CALL_ID',
+          path: `${envPath}/agentFunctionResponse/functionCallId`,
+          message: `'agentFunctionResponse.functionCallId' is required in A2UI v1.0.`,
+        });
+      }
+      const hasVal = 'value' in afr;
+      const hasErr = 'error' in afr;
+      if ((hasVal && hasErr) || (!hasVal && !hasErr)) {
+        diagnostics.push({
+          severity: 'error',
+          code: 'INVALID_FUNCTION_RESPONSE_ONEOF',
+          path: `${envPath}/agentFunctionResponse`,
+          message: `'agentFunctionResponse' must contain either 'value' or 'error' (mutually exclusive per common_types.json#/$defs/FunctionResponse).`,
         });
       }
     }

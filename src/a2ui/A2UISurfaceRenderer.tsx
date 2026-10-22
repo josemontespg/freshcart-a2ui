@@ -5,7 +5,9 @@ import {
   FRESHCART_GROCERY_CATALOG_ID,
   type A2UIAction,
   type A2UIActionEvent,
+  type A2UICallAgentFunctionMessage,
   type A2UIChildListTemplate,
+  type A2UIFunctionCall,
   type A2UIRendererErrorEvent,
   type A2UISurfaceState,
 } from '../types/a2ui-v1';
@@ -15,7 +17,7 @@ import {
   createRootEvaluationContext,
   createScopedEvaluationContext,
   evaluateDynamicValue,
-  evaluateFunctionCall,
+  evaluateFunctionCallWithPolicy,
   getValueAtPointer,
   resolveDynamicBoolean,
   resolveDynamicString,
@@ -28,6 +30,8 @@ import {
 } from './catalogs/basicCatalogRenderer';
 import { renderGroceryCatalogComponent } from './catalogs/groceryCatalogRenderer';
 
+let rpcCallCounter = 1;
+
 export interface A2UISurfaceRendererProps {
   /** Active surface state managed by SurfaceManager */
   surface: A2UISurfaceState | null | undefined;
@@ -39,6 +43,17 @@ export interface A2UISurfaceRendererProps {
     pointerPath: string,
     value: unknown
   ) => void;
+  /** Dispatched when a client-side functionCall action applies a synchronous patch to the surface dataModel */
+  onLocalFunctionPatch?: (
+    surfaceId: string,
+    patch: Record<string, unknown>,
+    sourceLabel: string
+  ) => void;
+  /**
+   * Dispatched when a FunctionCall routes to a server-side function via
+   * A2UI v1.0 `callAgentFunction` (`renderer_to_agent.json` & Fallback Routing).
+   */
+  onCallAgentFunction?: (rpcMessage: A2UICallAgentFunctionMessage) => void;
   /** Optional callback when a renderer-level error occurs */
   onRendererError?: (error: A2UIRendererErrorEvent) => void;
   /** Optional product catalog lookup for enriching custom Grocery Catalog components */
@@ -69,6 +84,9 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
   surface,
   onAction,
   onDataModelChange,
+  onLocalFunctionPatch,
+  onCallAgentFunction,
+  onRendererError,
   products,
   className = '',
   showSurfaceBadge = false,
@@ -89,14 +107,69 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
     ) => {
       if (!surface || !action) return;
 
+      const handleLocalPatch = (
+        patch: Record<string, unknown>,
+        label: string
+      ) => {
+        if (onLocalFunctionPatch) {
+          onLocalFunctionPatch(surface.surfaceId, patch, label);
+        } else if (onDataModelChange) {
+          onDataModelChange(surface.surfaceId, '/', {
+            ...surface.dataModel,
+            ...patch,
+          });
+        }
+      };
+
+      const handleFallbackRpc = (
+        call: A2UIFunctionCall,
+        evaluatedArgs: Record<string, unknown>
+      ) => {
+        const callSeq = rpcCallCounter++;
+        const functionCallId = `rpc_agent_${call['@call']}_${callSeq}`;
+        const rpcMessage: A2UICallAgentFunctionMessage = {
+          version: 'v1.0',
+          callAgentFunction: {
+            surfaceId: surface.surfaceId,
+            functionCallId,
+            callFunction: {
+              '@call': call['@call'],
+              catalogId:
+                call.catalogId || surface.catalogId || A2UI_BASIC_CATALOG_ID,
+              args: evaluatedArgs as Record<string, string | number | boolean | null>,
+            },
+          },
+        };
+        onCallAgentFunction?.(rpcMessage);
+      };
+
       const activatedContext: DataEvaluationContext = {
         ...scopeContext,
         isUserActivated: true,
+        callerKind: 'renderer',
+        onLocalStatePatch: handleLocalPatch,
+        onFallbackServerRpc: handleFallbackRpc,
       };
 
-      // Case 1: Local FunctionAction (`{ functionCall: { "@call": "..." } }`)
+      // Case 1: FunctionAction (`{ functionCall: { "@call": "..." } }`)
+      // Executes locally if registered as a client function, or automatically routes
+      // via `callAgentFunction` when targeting a server-side function (Spec Fallback Routing).
       if ('functionCall' in action && action.functionCall) {
-        evaluateFunctionCall(action.functionCall, activatedContext);
+        const outcome = evaluateFunctionCallWithPolicy(
+          action.functionCall,
+          activatedContext
+        );
+        if (!outcome.ok && outcome.error) {
+          onRendererError?.({
+            version: 'v1.0',
+            error: {
+              code: outcome.error.code,
+              surfaceId: surface.surfaceId,
+              path: `/${sourceComponentId}/action/functionCall`,
+              message: outcome.error.message,
+            },
+          });
+        }
         return;
       }
 
@@ -132,7 +205,14 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
         onAction?.(outboundEvent);
       }
     },
-    [surface, onAction]
+    [
+      surface,
+      onAction,
+      onDataModelChange,
+      onLocalFunctionPatch,
+      onCallAgentFunction,
+      onRendererError,
+    ]
   );
 
   if (!surface) {
