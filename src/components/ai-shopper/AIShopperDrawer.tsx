@@ -46,6 +46,11 @@ import {
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
 import {
+  buildExtensionsShowcaseStream,
+  recalculateExtensionsShowcaseDataModel,
+  type TastingBoardItem,
+} from '../../scenarios/extensionsShowcaseScenario';
+import {
   buildCompactCartContext,
   buildCompactCatalogContext,
   generateA2UISurfaceWithGemini,
@@ -90,12 +95,16 @@ export interface AIShopperDrawerProps {
 }
 
 const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
+  'extensions-showcase':
+    "Curate a Chef's Artisanal Tasting Board showcasing A2UI v1.0 Protocol Extensions (metadata.extensions)",
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
+  'extensions-showcase':
+    'Here is a Chef’s Artisanal Tasting Board powered by A2UI v1.0 Protocol Extensions (createSurface.metadata.extensions, ComponentCommon.metadata.extensions, and action.metadata.extensions):',
   'meal-planner':
     'Here is a chef-curated dinner plan you can customize by servings and dietary preferences:',
   'cart-optimizer':
@@ -151,9 +160,18 @@ function rewriteEnvelopesSurfaceId(
 
 function inferScenarioFromPrompt(
   promptText: string,
-  fallback: ScenarioId = 'meal-planner'
+  fallback: ScenarioId = 'extensions-showcase'
 ): ScenarioId {
   const lower = promptText.toLowerCase();
+  if (
+    lower.includes('extension') ||
+    lower.includes('metadata') ||
+    lower.includes('tasting board') ||
+    lower.includes('confetti') ||
+    lower.includes('aisle highlight')
+  ) {
+    return 'extensions-showcase';
+  }
   if (
     lower.includes('swap') ||
     lower.includes('cart') ||
@@ -196,7 +214,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   products: propProducts,
   cartItems: propCartItems,
   actionHandler: propActionHandler,
-  initialScenarioId = 'meal-planner',
+  initialScenarioId = 'extensions-showcase',
   activeScenarioId: controlledScenarioId,
   onScenarioChange,
   onDispatchA2UIMessage,
@@ -247,6 +265,16 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'extensions-showcase') {
+        const guestCount =
+          parsedNum && parsedNum >= 2 && parsedNum <= 10 ? parsedNum : 4;
+        return buildExtensionsShowcaseStream({
+          storeId: effectiveStoreId,
+          products: effectiveProducts,
+          guestCount,
+        });
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -367,7 +395,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         },
       ]);
 
-      if (preferBlueprintInstant) {
+      if (preferBlueprintInstant || scenarioHint === 'extensions-showcase') {
         const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
         dispatchEnvelopesForSurface(envelopes, surfaceId, 'Quick Action');
         setChatTurns((prev) => [
@@ -485,17 +513,17 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     turnCounterRef.current += 1;
     const resetSurfaceId = `chat_surface_${turnCounterRef.current}`;
     const envelopes = buildFallbackEnvelopesForPrompt(
-      SCENARIO_USER_PROMPTS['meal-planner'],
-      'meal-planner'
+      SCENARIO_USER_PROMPTS['extensions-showcase'],
+      'extensions-showcase'
     );
     dispatchEnvelopesForSurface(envelopes, resetSurfaceId, 'Reset Chat');
     setChatTurns([
       {
         id: `turn_${turnCounterRef.current}`,
         role: 'assistant',
-        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Tell me what you'd like to cook, ask for a weekly meal plan, or let me find savings in your cart.`,
+        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Here is our Chef's Artisanal Tasting Board powered by A2UI v1.0 Protocol Extensions (metadata.extensions):`,
         surfaceId: resetSurfaceId,
-        scenarioHint: 'meal-planner',
+        scenarioHint: 'extensions-showcase',
       },
     ]);
   }, [
@@ -525,7 +553,24 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         updatedTempState.surfaces[surfaceId]?.dataModel ??
         currentSurface.dataModel;
 
-      if (Array.isArray(nextModel.ingredients)) {
+      if (Array.isArray(nextModel.tastingItems)) {
+        const recalculated = recalculateExtensionsShowcaseDataModel(
+          nextModel,
+          pointerPath,
+          effectiveProducts
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: recalculated,
+            },
+          },
+          `Extensions Showcase Recalculation (${pointerPath})`
+        );
+      } else if (Array.isArray(nextModel.ingredients)) {
         const recalculated = recalculateMealPlannerDataModel(
           nextModel,
           pointerPath,
@@ -582,9 +627,97 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       setInternalManagerState((prev) => recordOutboundActionEvent(prev, event));
       onRecordOutboundAction?.(event);
 
-      const { name, surfaceId, context } = event.action;
+      const { name, surfaceId, context, metadata: actionMetadata } =
+        event.action;
       const currentSurface = mergedSurfaces[surfaceId];
       const currentModel = currentSurface?.dataModel ?? {};
+      const outboundExtJson = actionMetadata?.extensions
+        ? JSON.stringify(actionMetadata.extensions, null, 2)
+        : '';
+
+      if (name === 'add_tasting_board_to_cart') {
+        const guestCount = Number(
+          context.guestCount ?? currentModel.guestCount ?? 4
+        );
+        const rawItems = Array.isArray(context.tastingItems)
+          ? (context.tastingItems as TastingBoardItem[])
+          : Array.isArray(currentModel.tastingItems)
+            ? (currentModel.tastingItems as TastingBoardItem[])
+            : [];
+
+        const includedBundle = rawItems
+          .filter((item) => item.included !== false)
+          .map((item) => ({
+            productId: item.productId,
+            quantity: Math.max(1, Number(item.scaledQty ?? 1)),
+          }));
+
+        if (includedBundle.length > 0) {
+          effectiveActionHandler.addBundleToCart(
+            includedBundle,
+            `Artisanal Tasting Board (${guestCount} guests)`
+          );
+        }
+
+        const extKeyCount = Object.keys(
+          actionMetadata?.extensions ?? {}
+        ).length;
+        const confirmMsg = `Added ${includedBundle.length} artisanal picks (${guestCount} guests) to cart · ${extKeyCount} action.metadata.extensions keys verified ✓`;
+
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: {
+                ...currentModel,
+                lastActionConfirmation: confirmMsg,
+                lastOutboundExtensionsJson: outboundExtJson,
+              },
+            },
+          },
+          'Tasting Board Bundle Added (with action.metadata.extensions)'
+        );
+        return;
+      }
+
+      if (name === 'locate_aisle_item') {
+        const category = String(context.category ?? 'all');
+        const productId = String(context.productId ?? '');
+        const itemName = String(context.name ?? 'Item');
+        const aisleLocation = String(
+          context.aisleLocation ?? 'Storefront Aisle'
+        );
+
+        window.dispatchEvent(
+          new CustomEvent('freshcart:highlight-aisle', {
+            detail: {
+              category,
+              productId,
+              aisleLabel: `${itemName} (${aisleLocation})`,
+            },
+          })
+        );
+
+        const confirmMsg = `Highlighted ${aisleLocation} for ${itemName} in storefront ✓`;
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: {
+                ...currentModel,
+                lastActionConfirmation: confirmMsg,
+                lastOutboundExtensionsJson: outboundExtJson,
+              },
+            },
+          },
+          `Locate Aisle (${aisleLocation})`
+        );
+        return;
+      }
 
       if (name === 'add_recipe_bundle_to_cart') {
         const servings = Number(context.servings ?? currentModel.servings ?? 4);

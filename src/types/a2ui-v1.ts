@@ -234,6 +234,9 @@ export interface A2UISurfaceState {
   sendDataModel: boolean;
   componentsById: Record<string, A2UIComponentBase>;
   dataModel: Record<string, unknown>;
+  metadata?: {
+    extensions?: Record<string, unknown>;
+  };
   createdAt: string;
   updatedAt: string;
 }
