@@ -205,111 +205,108 @@ const FreshCartWorkspace: React.FC = () => {
   }, [closeCartDrawer]);
 
   return (
-    <div id="top" className="min-h-screen flex flex-col bg-[#F7F5F0] text-stone-900">
-      {/* Sticky Top Navigation Bar */}
-      <TopNavbar
-        activeStore={activeStore}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        totalItemCount={totalItemCount}
-        subtotal={subtotal}
-        isFreeDeliveryUnlocked={freeDeliveryProgress.isUnlocked}
-        amountToFreeDelivery={freeDeliveryProgress.amountRemaining}
-        onOpenCart={openCartDrawer}
-        isAIShopperOpen={isAIShopperOpen}
-        onToggleAIShopper={() => setIsAIShopperOpen((prev) => !prev)}
-        onLaunchScenario={handleLaunchScenario}
-      />
+    <div id="top" className="h-dvh overflow-hidden flex bg-[#F7F5F0] text-stone-900">
+      {/* Left Independent Scrollable Storefront Column */}
+      <div className="flex-1 min-w-0 h-dvh overflow-y-auto flex flex-col">
+        {/* Sticky Top Navigation Bar */}
+        <TopNavbar
+          activeStore={activeStore}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          totalItemCount={totalItemCount}
+          subtotal={subtotal}
+          isFreeDeliveryUnlocked={freeDeliveryProgress.isUnlocked}
+          amountToFreeDelivery={freeDeliveryProgress.amountRemaining}
+          onOpenCart={openCartDrawer}
+          isAIShopperOpen={isAIShopperOpen}
+          onToggleAIShopper={() => setIsAIShopperOpen((prev) => !prev)}
+          onLaunchScenario={handleLaunchScenario}
+        />
 
-      {/* Live Order Tracker Banner (renders automatically when an order is placed) */}
-      <OrderTrackerBanner />
+        {/* Live Order Tracker Banner (renders automatically when an order is placed) */}
+        <OrderTrackerBanner />
 
-      {/* Main Content + Docked AI Personal Shopper Split View */}
-      <div className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5">
-        {/* Store Switcher Pill Bar */}
-        <section aria-label="Store selector" className="mb-5">
-          <StoreSwitcherBar
-            stores={STORES}
-            activeStoreId={activeStoreId}
-            onSelectStore={handleSelectStore}
+        {/* Primary Storefront Content */}
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+          {/* Store Switcher Pill Bar */}
+          <section aria-label="Store selector">
+            <StoreSwitcherBar
+              stores={STORES}
+              activeStoreId={activeStoreId}
+              onSelectStore={handleSelectStore}
+            />
+          </section>
+
+          {/* Store Promotional Hero Banner */}
+          <HeroBanner
+            store={activeStore}
+            onLaunchAIScenario={(scenarioId) =>
+              handleLaunchScenario(scenarioId)
+            }
+            onQuickFilterTag={(tag) => {
+              if (!selectedDietaryTags.includes(tag)) {
+                setSelectedDietaryTags((prev) => [...prev, tag]);
+              }
+            }}
           />
-        </section>
 
-        {/* Responsive Split Workspace: Storefront Left + AI Personal Shopper Right */}
-        <div className="flex flex-col lg:flex-row items-start gap-6">
-          {/* Primary Storefront Column */}
-          <main className="flex-1 min-w-0 w-full space-y-5">
-            {/* Store Promotional Hero Banner */}
-            <HeroBanner
-              store={activeStore}
-              onLaunchAIScenario={(scenarioId) =>
-                handleLaunchScenario(scenarioId)
-              }
-              onQuickFilterTag={(tag) => {
-                if (!selectedDietaryTags.includes(tag)) {
-                  setSelectedDietaryTags((prev) => [...prev, tag]);
-                }
-              }}
-            />
+          {/* Category & Dietary Filter Bar */}
+          <CategoryFilterBar
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            selectedDietaryTags={selectedDietaryTags}
+            onToggleDietaryTag={handleToggleDietaryTag}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            onlyOnSale={onlyOnSale}
+            onToggleOnSale={() => setOnlyOnSale((prev) => !prev)}
+            onClearFilters={handleClearFilters}
+            totalMatchingCount={filteredProductsCount}
+          />
 
-            {/* Category & Dietary Filter Bar */}
-            <CategoryFilterBar
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              selectedDietaryTags={selectedDietaryTags}
-              onToggleDietaryTag={handleToggleDietaryTag}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              onlyOnSale={onlyOnSale}
-              onToggleOnSale={() => setOnlyOnSale((prev) => !prev)}
-              onClearFilters={handleClearFilters}
-              totalMatchingCount={filteredProductsCount}
-            />
-
-            {/* Storefront Product Catalog Grid */}
-            <ProductGrid
-              products={storeProducts}
-              selectedCategory={selectedCategory}
-              selectedDietaryTags={selectedDietaryTags}
-              searchQuery={searchQuery}
-              sortBy={sortBy}
-              onlyOnSale={onlyOnSale}
-              onSelectProduct={(product) => setSelectedProduct(product)}
-              onResetFilters={handleClearFilters}
-              onLaunchAIScenario={(scenarioId) =>
-                handleLaunchScenario(scenarioId)
-              }
-            />
-          </main>
-
-          {/* Right-Hand Docked / Responsive AI Personal Shopper Panel */}
-          {isAIShopperOpen && (
-            <aside
-              aria-label="FreshCart AI Personal Shopper"
-              className="w-full lg:w-[460px] xl:w-[500px] shrink-0 lg:sticky lg:top-20"
-            >
-              <AIShopperDrawer
-                isOpen={isAIShopperOpen}
-                onClose={() => setIsAIShopperOpen(false)}
-                activeStoreId={activeStoreId}
-                storeName={activeStore.name}
-                products={PRODUCTS}
-                cartItems={cartItems}
-                actionHandler={cart}
-                initialScenarioId={activeScenarioId}
-                activeScenarioId={activeScenarioId}
-                onScenarioChange={setActiveScenarioId}
-                onDispatchA2UIMessage={handleDispatchA2UIMessage}
-                onRecordOutboundAction={handleRecordOutboundAction}
-                onEditDataModelPath={handleEditDataModelPath}
-                surfaces={surfaceManagerState.surfaces}
-              />
-            </aside>
-          )}
-        </div>
+          {/* Storefront Product Catalog Grid */}
+          <ProductGrid
+            products={storeProducts}
+            selectedCategory={selectedCategory}
+            selectedDietaryTags={selectedDietaryTags}
+            searchQuery={searchQuery}
+            sortBy={sortBy}
+            onlyOnSale={onlyOnSale}
+            onSelectProduct={(product) => setSelectedProduct(product)}
+            onResetFilters={handleClearFilters}
+            onLaunchAIScenario={(scenarioId) =>
+              handleLaunchScenario(scenarioId)
+            }
+          />
+        </main>
       </div>
+
+      {/* Full-Viewport-Height Right Side Panel for AI Personal Shopper Chat */}
+      {isAIShopperOpen && (
+        <aside
+          aria-label="FreshCart AI Personal Shopper"
+          className="fixed inset-y-0 right-0 z-40 w-full sm:w-[440px] lg:static lg:z-auto lg:w-[440px] xl:w-[480px] shrink-0 h-dvh border-l border-stone-200/90 bg-[#FAF8F5] shadow-2xl lg:shadow-none"
+        >
+          <AIShopperDrawer
+            isOpen={isAIShopperOpen}
+            onClose={() => setIsAIShopperOpen(false)}
+            activeStoreId={activeStoreId}
+            storeName={activeStore.name}
+            products={PRODUCTS}
+            cartItems={cartItems}
+            actionHandler={cart}
+            initialScenarioId={activeScenarioId}
+            activeScenarioId={activeScenarioId}
+            onScenarioChange={setActiveScenarioId}
+            onDispatchA2UIMessage={handleDispatchA2UIMessage}
+            onRecordOutboundAction={handleRecordOutboundAction}
+            onEditDataModelPath={handleEditDataModelPath}
+            surfaces={surfaceManagerState.surfaces}
+          />
+        </aside>
+      )}
 
       {/* Product Detail Modal (Nutrition Facts & Smart Alternatives) */}
       <ProductDetailModal

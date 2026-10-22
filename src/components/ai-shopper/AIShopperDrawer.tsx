@@ -900,8 +900,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
 
   const containerClasses =
     mode === 'drawer'
-      ? 'fixed inset-y-0 right-0 z-40 w-full max-w-[520px] shadow-2xl flex flex-col bg-[#FAF8F5] border-l border-stone-200/80'
-      : 'w-full flex flex-col bg-[#FAF8F5] border border-stone-200/80 rounded-3xl shadow-sm overflow-hidden h-[calc(100vh-7rem)] min-h-[640px] max-h-[860px]';
+      ? 'fixed inset-y-0 right-0 z-40 w-full max-w-[500px] h-dvh shadow-2xl flex flex-col bg-[#FAF8F5] border-l border-stone-200/80 overflow-hidden'
+      : 'h-full w-full flex flex-col bg-[#FAF8F5] overflow-hidden';
 
   return (
     <aside className={containerClasses} aria-label="AI Personal Shopper Chat">
@@ -945,7 +945,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       </div>
 
       {/* Scrollable Chat Thread */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5">
         {chatTurns.map((turn) => {
           if (turn.role === 'user') {
             return (
