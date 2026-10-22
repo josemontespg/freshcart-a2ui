@@ -1,5 +1,14 @@
-import React, { useCallback } from 'react';
-import { Sparkles } from 'lucide-react';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Code2,
+  MapPin,
+  PartyPopper,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 import {
   A2UI_BASIC_CATALOG_ID,
   FRESHCART_GROCERY_CATALOG_ID,
@@ -22,6 +31,7 @@ import {
   resolvePointerPath,
 } from './DataModelBinder';
 import { evaluateComponentChecks } from './ValidationEngine';
+import { isValidExtensionKey } from './SurfaceManager';
 import {
   type A2UIRenderNodeContext,
   renderBasicCatalogComponent,
@@ -63,7 +73,43 @@ function isChildListTemplate(
 }
 
 /**
+ * Helper to look up an extension entry by either its canonical UAX #31 identifier
+ * (`freshcart_theme`) or dotted alias (`freshcart.theme`).
+ */
+function getExtensionRecord(
+  extensions: Record<string, unknown> | undefined,
+  uax31Key: string,
+  dottedAlias?: string
+): Record<string, unknown> | undefined {
+  if (!extensions) return undefined;
+  const val =
+    extensions[uax31Key] ?? (dottedAlias ? extensions[dottedAlias] : undefined);
+  if (val && typeof val === 'object' && !Array.isArray(val)) {
+    return val as Record<string, unknown>;
+  }
+  return undefined;
+}
+
+const CONFETTI_PARTICLES = [
+  { left: '8%', bg: 'bg-amber-400', delay: '0ms', duration: '950ms' },
+  { left: '16%', bg: 'bg-emerald-500', delay: '60ms', duration: '1050ms' },
+  { left: '24%', bg: 'bg-rose-400', delay: '120ms', duration: '900ms' },
+  { left: '33%', bg: 'bg-sky-400', delay: '40ms', duration: '1100ms' },
+  { left: '42%', bg: 'bg-amber-500', delay: '90ms', duration: '980ms' },
+  { left: '51%', bg: 'bg-emerald-400', delay: '20ms', duration: '1020ms' },
+  { left: '60%', bg: 'bg-violet-400', delay: '110ms', duration: '940ms' },
+  { left: '69%', bg: 'bg-amber-400', delay: '50ms', duration: '1080ms' },
+  { left: '78%', bg: 'bg-emerald-500', delay: '80ms', duration: '960ms' },
+  { left: '87%', bg: 'bg-rose-400', delay: '30ms', duration: '1040ms' },
+  { left: '94%', bg: 'bg-amber-300', delay: '70ms', duration: '920ms' },
+];
+
+/**
  * Multi-Catalog A2UI Surface Renderer (`<A2UISurfaceRenderer />`)
+ * Supports A2UI v1.0 Protocol Extensions (`metadata.extensions`) across:
+ * 1. `createSurface.metadata.extensions` (Surface-level theming, confetti, telemetry)
+ * 2. `ComponentCommon.metadata.extensions` (Component-level aisle locators, spotlights, animations)
+ * 3. `action.metadata.extensions` (Renderer-to-agent outbound action provenance & telemetry)
  */
 export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
   surface,
@@ -73,6 +119,55 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
   className = '',
   showSurfaceBadge = false,
 }) => {
+  const [showExtensionsInspector, setShowExtensionsInspector] = useState(false);
+  const [confettiBurst, setConfettiBurst] = useState<{
+    active: boolean;
+    label: string;
+    count: number;
+  }>({ active: false, label: '', count: 0 });
+  const [lastOutboundActionExtensions, setLastOutboundActionExtensions] =
+    useState<Record<string, unknown> | null>(null);
+
+  const surfaceExtensions = surface?.metadata?.extensions;
+
+  // Read live dataModel overrides for interactive extension controls
+  const dataModel = surface?.dataModel ?? {};
+  const extensionsConfig = (dataModel.extensionsConfig ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const enableAisleHighlights =
+    extensionsConfig.enableAisleHighlights !== undefined
+      ? Boolean(extensionsConfig.enableAisleHighlights)
+      : true;
+  const enableConfettiOnAction =
+    extensionsConfig.enableConfettiOnAction !== undefined
+      ? Boolean(extensionsConfig.enableConfettiOnAction)
+      : true;
+
+  const surfaceThemeExt = getExtensionRecord(
+    surfaceExtensions,
+    'freshcart_theme',
+    'freshcart.theme'
+  );
+  const rawModelPalette = dataModel.extensionThemePalette;
+  const activeThemePalette = Array.isArray(rawModelPalette)
+    ? String(rawModelPalette[0] ?? surfaceThemeExt?.palette ?? 'harvest-gold')
+    : typeof rawModelPalette === 'string'
+      ? rawModelPalette
+      : String(surfaceThemeExt?.palette ?? 'default');
+
+  const triggerConfettiCelebration = useCallback((label: string) => {
+    setConfettiBurst((prev) => ({
+      active: true,
+      label,
+      count: prev.count + 1,
+    }));
+    window.setTimeout(() => {
+      setConfettiBurst((prev) => ({ ...prev, active: false }));
+    }, 2200);
+  }, []);
+
   const handleUpdateDataModelPath = useCallback(
     (pointerPath: string, value: unknown) => {
       if (!surface) return;
@@ -117,6 +212,89 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
               )
             : undefined;
 
+        const sourceComp = surface.componentsById[sourceComponentId];
+        const compExtensions = sourceComp?.metadata?.extensions;
+        const surfExtensions = surface.metadata?.extensions;
+
+        const compConfetti = getExtensionRecord(
+          compExtensions,
+          'freshcart_confettiOnAction',
+          'freshcart.confettiOnAction'
+        );
+        const surfConfetti = getExtensionRecord(
+          surfExtensions,
+          'freshcart_confettiOnAction',
+          'freshcart.confettiOnAction'
+        );
+
+        const shouldFireConfetti =
+          enableConfettiOnAction &&
+          Boolean(compConfetti?.enabled ?? surfConfetti?.enabled ?? false) &&
+          action.event.name !== 'locate_aisle_item';
+
+        if (shouldFireConfetti) {
+          const celebrationText = String(
+            compConfetti?.celebrationLabel ??
+              surfConfetti?.celebrationText ??
+              'Action completed with A2UI v1.0 Extensions! 🎉'
+          );
+          triggerConfettiCelebration(celebrationText);
+        }
+
+        // Build v1.0 `action.metadata.extensions` (renderer_to_agent.json)
+        // using strict Unicode UAX #31 extension identifiers
+        const hasAnyExtensions =
+          Boolean(compExtensions && Object.keys(compExtensions).length > 0) ||
+          Boolean(surfExtensions && Object.keys(surfExtensions).length > 0);
+
+        let actionMetadataExtensions: Record<string, unknown> | undefined;
+        if (hasAnyExtensions) {
+          const compProvenance = getExtensionRecord(
+            compExtensions,
+            'freshcart_analyticsProvenance',
+            'freshcart.analyticsProvenance'
+          );
+          const surfProvenance = getExtensionRecord(
+            surfExtensions,
+            'freshcart_analyticsProvenance',
+            'freshcart.analyticsProvenance'
+          );
+          const surfTelemetry = getExtensionRecord(
+            surfExtensions,
+            'a2ui_telemetry'
+          );
+          const compTelemetry = getExtensionRecord(
+            compExtensions,
+            'a2ui_telemetry'
+          );
+
+          actionMetadataExtensions = {
+            freshcart_analyticsProvenance: {
+              ...(surfProvenance ?? {}),
+              ...(compProvenance ?? {}),
+              sourceComponentId,
+              actionName: action.event.name,
+              activeThemePalette,
+            },
+            freshcart_clientContext: {
+              surfaceId: surface.surfaceId,
+              confettiFired: shouldFireConfetti,
+              aisleHighlightsActive: enableAisleHighlights,
+              dispatchedAt: new Date().toISOString(),
+            },
+            ...(surfTelemetry || compTelemetry
+              ? {
+                  a2ui_telemetry: {
+                    ...(surfTelemetry ?? {}),
+                    ...(compTelemetry ?? {}),
+                    roundTripVerified: true,
+                  },
+                }
+              : {}),
+          };
+          setLastOutboundActionExtensions(actionMetadataExtensions);
+        }
+
         const outboundEvent: A2UIActionEvent = {
           version: 'v1.0',
           action: {
@@ -126,14 +304,70 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
             sourceComponentId,
             timestamp: new Date().toISOString(),
             context: resolvedContext,
+            ...(actionMetadataExtensions
+              ? {
+                  metadata: {
+                    extensions: actionMetadataExtensions,
+                  },
+                }
+              : {}),
           },
         };
 
         onAction?.(outboundEvent);
       }
     },
-    [surface, onAction]
+    [
+      surface,
+      onAction,
+      enableConfettiOnAction,
+      enableAisleHighlights,
+      activeThemePalette,
+      triggerConfettiCelebration,
+    ]
   );
+
+  // Collect component-level extension statistics for the inspector drawer
+  const extensionSummary = useMemo(() => {
+    if (!surface) {
+      return {
+        surfaceKeys: [] as string[],
+        componentExtensionCount: 0,
+        componentEntries: [] as Array<{
+          componentId: string;
+          componentType: string;
+          keys: string[];
+          allUax31Valid: boolean;
+        }>,
+      };
+    }
+    const surfaceKeys = Object.keys(surface.metadata?.extensions ?? {});
+    const componentEntries: Array<{
+      componentId: string;
+      componentType: string;
+      keys: string[];
+      allUax31Valid: boolean;
+    }> = [];
+
+    for (const comp of Object.values(surface.componentsById)) {
+      const ext = comp.metadata?.extensions;
+      if (ext && Object.keys(ext).length > 0) {
+        const keys = Object.keys(ext);
+        componentEntries.push({
+          componentId: comp.id,
+          componentType: String(comp.component),
+          keys,
+          allUax31Valid: keys.every(isValidExtensionKey),
+        });
+      }
+    }
+
+    return {
+      surfaceKeys,
+      componentExtensionCount: componentEntries.length,
+      componentEntries,
+    };
+  }, [surface]);
 
   if (!surface) {
     return (
@@ -152,7 +386,7 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
     );
   }
 
-  const { componentsById, dataModel } = surface;
+  const { componentsById } = surface;
   const componentKeys = Object.keys(componentsById);
 
   if (componentKeys.length === 0) {
@@ -177,6 +411,42 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
     dataModel,
     surface.catalogId || A2UI_BASIC_CATALOG_ID
   );
+
+  const hasSurfaceExtensions =
+    Boolean(surfaceExtensions && Object.keys(surfaceExtensions).length > 0) ||
+    extensionSummary.componentExtensionCount > 0;
+
+  // Compute theme container classes driven by `createSurface.metadata.extensions.freshcart_theme`
+  const themeWrapperClasses = !hasSurfaceExtensions
+    ? ''
+    : activeThemePalette === 'harvest-gold'
+      ? 'rounded-3xl border-2 border-amber-300/90 bg-gradient-to-b from-amber-50/70 via-white to-amber-50/30 p-3.5 shadow-sm ring-1 ring-amber-400/20 transition-all duration-300'
+      : activeThemePalette === 'midnight-cellar'
+        ? 'rounded-3xl border-2 border-indigo-300/90 bg-gradient-to-b from-indigo-50/70 via-white to-slate-50/60 p-3.5 shadow-sm ring-1 ring-indigo-400/20 transition-all duration-300'
+        : 'rounded-3xl border-2 border-emerald-300/90 bg-gradient-to-b from-emerald-50/60 via-white to-emerald-50/25 p-3.5 shadow-sm ring-1 ring-emerald-400/20 transition-all duration-300';
+
+  const themeBadgeClasses =
+    activeThemePalette === 'harvest-gold'
+      ? 'bg-amber-100/90 text-amber-900 border-amber-300'
+      : activeThemePalette === 'midnight-cellar'
+        ? 'bg-indigo-100/90 text-indigo-900 border-indigo-300'
+        : 'bg-emerald-100/90 text-emerald-900 border-emerald-300';
+
+  const handleTriggerAisleLocate = (aisleExt: Record<string, unknown>) => {
+    const category = String(aisleExt.category ?? 'all');
+    const productId = String(aisleExt.productId ?? '');
+    const aisleLabel = String(aisleExt.aisleLabel ?? 'Featured Aisle');
+
+    window.dispatchEvent(
+      new CustomEvent('freshcart:highlight-aisle', {
+        detail: {
+          category,
+          productId,
+          aisleLabel,
+        },
+      })
+    );
+  };
 
   const renderNodeInternal = (
     componentId: string,
@@ -251,6 +521,87 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
 
     if (renderedElement === null) {
       return null;
+    }
+
+    // Apply Component-Level A2UI v1.0 `ComponentCommon.metadata.extensions`
+    const compExtensions = comp.metadata?.extensions;
+    if (compExtensions && comp.id !== 'root') {
+      const dealSpotlight = getExtensionRecord(
+        compExtensions,
+        'freshcart_dealSpotlight',
+        'freshcart.dealSpotlight'
+      );
+      const aisleHighlight = enableAisleHighlights
+        ? getExtensionRecord(
+            compExtensions,
+            'freshcart_aisleHighlight',
+            'freshcart.aisleHighlight'
+          )
+        : undefined;
+      const animExt = getExtensionRecord(
+        compExtensions,
+        'freshcart_animations',
+        'freshcart.animations'
+      );
+
+      if (dealSpotlight || aisleHighlight || animExt) {
+        const spotlightTone = String(dealSpotlight?.tone ?? 'amber');
+        const animationClass = animExt
+          ? 'transition-all duration-300 hover:-translate-y-0.5'
+          : '';
+
+        renderedElement = (
+          <div
+            data-a2ui-extensions={Object.keys(compExtensions).join(',')}
+            className={`relative flex flex-col gap-1.5 ${animationClass}`}
+          >
+            {dealSpotlight && Boolean(dealSpotlight.ribbonText) && (
+              <div
+                className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 text-[11px] font-bold shadow-2xs ${
+                  spotlightTone === 'emerald'
+                    ? 'border-emerald-300/90 bg-gradient-to-r from-emerald-600 to-teal-600 text-white'
+                    : 'border-amber-300/90 bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                }`}
+              >
+                <span className="flex items-center gap-1.5 truncate">
+                  <Zap className="h-3.5 w-3.5 shrink-0 fill-current" />
+                  <span className="truncate">
+                    {String(dealSpotlight.ribbonText)}
+                  </span>
+                </span>
+                <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider">
+                  ext:dealSpotlight
+                </span>
+              </div>
+            )}
+
+            {renderedElement}
+
+            {aisleHighlight && Boolean(aisleHighlight.aisleLabel) && (
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-1.5 text-[11px] text-amber-950">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-700" />
+                  <span className="font-semibold truncate">
+                    {String(aisleHighlight.aisleLabel)}
+                  </span>
+                  {Boolean(aisleHighlight.zoneBadge) && (
+                    <span className="hidden sm:inline-block rounded-full bg-amber-200/70 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+                      {String(aisleHighlight.zoneBadge)}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTriggerAisleLocate(aisleHighlight)}
+                  className="shrink-0 rounded-lg bg-amber-600 hover:bg-amber-700 px-2.5 py-1 text-[10px] font-bold text-white transition-colors cursor-pointer"
+                >
+                  Locate in Store →
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      }
     }
 
     const nodeKey =
@@ -359,11 +710,167 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
   const rootComponentId =
     'root' in componentsById ? 'root' : componentKeys[0];
 
+  const outboundExtensionsToDisplay =
+    lastOutboundActionExtensions ??
+    (typeof dataModel.lastOutboundExtensionsJson === 'string' &&
+    dataModel.lastOutboundExtensionsJson
+      ? (() => {
+          try {
+            return JSON.parse(
+              String(dataModel.lastOutboundExtensionsJson)
+            ) as Record<string, unknown>;
+          } catch {
+            return null;
+          }
+        })()
+      : null);
+
   return (
     <div
       data-surface-id={surface.surfaceId}
-      className={`flex flex-col gap-3.5 ${className}`}
+      className={`relative flex flex-col gap-3.5 ${themeWrapperClasses} ${className}`}
     >
+      {/* Celebratory Confetti Overlay driven by `metadata.extensions.freshcart_confettiOnAction` */}
+      {confettiBurst.active && (
+        <div
+          aria-live="polite"
+          className="pointer-events-none sticky top-2 z-30 overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-500 via-emerald-600 to-teal-600 px-4 py-2.5 text-white shadow-lg"
+        >
+          <div className="relative flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold">
+              <PartyPopper className="h-4 w-4 shrink-0 animate-bounce" />
+              <span>{confettiBurst.label}</span>
+            </div>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
+              freshcart_confettiOnAction
+            </span>
+          </div>
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            {CONFETTI_PARTICLES.map((p, idx) => (
+              <span
+                key={`${confettiBurst.count}-${idx}`}
+                style={{
+                  left: p.left,
+                  animationDelay: p.delay,
+                  animationDuration: p.duration,
+                }}
+                className={`absolute top-0 h-2 w-2 rounded-full ${p.bg} animate-ping opacity-80`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Surface-Level A2UI v1.0 Protocol Extensions Header Bar */}
+      {hasSurfaceExtensions && (
+        <div className="rounded-2xl border border-stone-200/90 bg-white/95 p-3 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span
+                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${themeBadgeClasses}`}
+              >
+                <Sparkles className="h-3 w-3" />
+                <span>v1.0 metadata.extensions</span>
+              </span>
+              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-700">
+                {extensionSummary.surfaceKeys.length} surface ·{' '}
+                {extensionSummary.componentExtensionCount} components
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowExtensionsInspector((prev) => !prev)}
+              className="inline-flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 px-2.5 py-1 text-[11px] font-semibold text-stone-700 transition-colors cursor-pointer"
+            >
+              <Code2 className="h-3.5 w-3.5 text-[#0AAD0A]" />
+              <span>{showExtensionsInspector ? 'Hide' : 'Inspect'} Extensions</span>
+              {showExtensionsInspector ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </button>
+          </div>
+
+          {/* Active Extension Key Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
+            {extensionSummary.surfaceKeys.map((extKey) => {
+              const validUax = isValidExtensionKey(extKey);
+              return (
+                <span
+                  key={extKey}
+                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 font-mono text-[10px] whitespace-nowrap ${
+                    validUax
+                      ? 'border-emerald-200/80 bg-emerald-50/70 text-emerald-900'
+                      : 'border-amber-300 bg-amber-50 text-amber-900'
+                  }`}
+                >
+                  <CheckCircle2 className="h-2.5 w-2.5 text-[#0AAD0A]" />
+                  <span>{extKey}</span>
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Expandable Live v1.0 Protocol Extensions Inspector */}
+          {showExtensionsInspector && (
+            <div className="mt-2 space-y-2.5 rounded-xl border border-stone-200 bg-stone-900 p-3 text-[11px] text-stone-100">
+              <div>
+                <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                  <span>1. Surface-Level (createSurface.metadata.extensions)</span>
+                  <span>UAX #31 Valid ✓</span>
+                </div>
+                <pre className="max-h-36 overflow-auto rounded-lg bg-stone-950 p-2 font-mono text-[10px] text-emerald-200">
+                  {JSON.stringify(surface.metadata?.extensions ?? {}, null, 2)}
+                </pre>
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-amber-300">
+                  <span>
+                    2. Component-Level (ComponentCommon.metadata.extensions)
+                  </span>
+                  <span>
+                    {extensionSummary.componentExtensionCount} components decorated
+                  </span>
+                </div>
+                <div className="max-h-32 overflow-y-auto space-y-1 rounded-lg bg-stone-950 p-2">
+                  {extensionSummary.componentEntries.map((entry) => (
+                    <div
+                      key={entry.componentId}
+                      className="flex items-center justify-between gap-2 font-mono text-[10px]"
+                    >
+                      <span className="text-stone-300">
+                        #{entry.componentId}{' '}
+                        <span className="text-stone-500">
+                          ({entry.componentType})
+                        </span>
+                      </span>
+                      <span className="text-amber-300 truncate">
+                        {entry.keys.join(', ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-sky-300">
+                  <span>3. Outbound Action (action.metadata.extensions)</span>
+                  <span>renderer_to_agent.json</span>
+                </div>
+                <pre className="max-h-36 overflow-auto rounded-lg bg-stone-950 p-2 font-mono text-[10px] text-sky-200">
+                  {outboundExtensionsToDisplay
+                    ? JSON.stringify(outboundExtensionsToDisplay, null, 2)
+                    : '// Click any action button (e.g. "Add Tasting Board to Cart" or "📍 Aisle") to capture outbound action.metadata.extensions'}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {showSurfaceBadge && (
         <div className="flex items-center justify-between rounded-xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-1.5 text-[11px] text-emerald-900">
           <span className="font-semibold">{surface.surfaceId}</span>

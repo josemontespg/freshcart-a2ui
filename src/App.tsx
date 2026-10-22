@@ -69,7 +69,7 @@ const FreshCartWorkspace: React.FC = () => {
   // AI Personal Shopper & Surface Manager state
   const [isAIShopperOpen, setIsAIShopperOpen] = useState<boolean>(true);
   const [activeScenarioId, setActiveScenarioId] =
-    useState<ScenarioId>('meal-planner');
+    useState<ScenarioId>('extensions-showcase');
 
   const [surfaceManagerState, setSurfaceManagerState] =
     useState<A2UISurfaceManagerState>(() => createInitialSurfaceManagerState());
@@ -203,6 +203,36 @@ const FreshCartWorkspace: React.FC = () => {
       );
     };
   }, [closeCartDrawer]);
+
+  // Listen for `freshcart:highlight-aisle` dispatched by `freshcart_aisleHighlight` component extension
+  useEffect(() => {
+    const handleHighlightAisle = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        category?: AisleCategory;
+        productId?: string;
+        aisleLabel?: string;
+      }>;
+      const targetCategory = customEvent.detail?.category;
+      const targetProductId = customEvent.detail?.productId;
+
+      if (targetCategory && targetCategory !== 'all') {
+        setSelectedCategory(targetCategory);
+      }
+      if (targetProductId) {
+        const matched = PRODUCTS.find((p) => p.id === targetProductId);
+        if (matched) {
+          setSelectedProduct(matched);
+        }
+      }
+    };
+    window.addEventListener('freshcart:highlight-aisle', handleHighlightAisle);
+    return () => {
+      window.removeEventListener(
+        'freshcart:highlight-aisle',
+        handleHighlightAisle
+      );
+    };
+  }, []);
 
   return (
     <div id="top" className="h-dvh overflow-hidden flex bg-[#F7F5F0] text-stone-900">

@@ -8,7 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'extensions-showcase'
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +35,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-extensions-showcase',
+    label: '✨ Protocol Extensions',
+    prompt:
+      "Curate a Chef's Artisanal Tasting Board showcasing A2UI v1.0 metadata.extensions (freshcart_theme, freshcart_aisleHighlight, freshcart_confettiOnAction, and action.metadata.extensions).",
+    scenarioId: 'extensions-showcase',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',

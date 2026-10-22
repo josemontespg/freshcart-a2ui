@@ -257,6 +257,7 @@ export function processA2UIMessage(
         sendDataModel: Boolean(payload.sendDataModel),
         componentsById,
         dataModel: initialDataModel,
+        ...(payload.metadata ? { metadata: cloneDeep(payload.metadata) } : {}),
         createdAt: nowIso,
         updatedAt: nowIso,
       };
@@ -450,7 +451,11 @@ export function clearProtocolLog(
   };
 }
 
-const UAX31_IDENTIFIER_REGEX = /^[\p{ID_Start}_][\p{ID_Continue}]*$/u;
+const UAX31_IDENTIFIER_REGEX = /^[\p{XID_Start}_][\p{XID_Continue}]*$/u;
+
+export function isValidExtensionKey(key: string): boolean {
+  return UAX31_IDENTIFIER_REGEX.test(key);
+}
 
 /**
  * Validates raw JSON text or a parsed object against A2UI v1.0 protocol rules,
