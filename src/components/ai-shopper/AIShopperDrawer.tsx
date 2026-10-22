@@ -46,6 +46,11 @@ import {
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
 import {
+  buildMacroShowcaseStream,
+  getMacroShowcaseExpansionPreview,
+  recalculateMacroShowcaseDataModel,
+} from '../../scenarios/macroShowcaseScenario';
+import {
   buildCompactCartContext,
   buildCompactCatalogContext,
   generateA2UISurfaceWithGemini,
@@ -93,6 +98,7 @@ const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
+  'macro-showcase': 'Build a customizable Chef Macro Meal Kit for 4 servings',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
@@ -102,6 +108,8 @@ const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
     'I checked your cart against store inventory and found these smart swaps and backups:',
   'budget-builder':
     'Here is a customizable weekly budget and nutrition plan tailored for your kitchen:',
+  'macro-showcase':
+    'I assembled this customizable Chef Meal Kit using 7 reusable A2UI v1.0 UI macros (RecipeBundleCard, MacroNutrientBar, 4x SmartSwapRow, and OneClickBundleFooter) that expand into 42 primitive components:',
 };
 
 function rewriteEnvelopesSurfaceId(
@@ -154,6 +162,9 @@ function inferScenarioFromPrompt(
   fallback: ScenarioId = 'meal-planner'
 ): ScenarioId {
   const lower = promptText.toLowerCase();
+  if (lower.includes('kit') || lower.includes('macro')) {
+    return 'macro-showcase';
+  }
   if (
     lower.includes('swap') ||
     lower.includes('cart') ||
@@ -167,7 +178,6 @@ function inferScenarioFromPrompt(
   if (
     lower.includes('budget') ||
     lower.includes('weekly') ||
-    lower.includes('macro') ||
     lower.includes('plan for the week') ||
     promptText.includes('$')
   ) {
@@ -247,6 +257,24 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'macro-showcase') {
+        const servings =
+          parsedNum && parsedNum >= 1 && parsedNum <= 8 ? parsedNum : 4;
+        const organicOnly = lower.includes('organic');
+        return buildMacroShowcaseStream({
+          kitStyleId:
+            lower.includes('pesto') ||
+            lower.includes('sourdough') ||
+            lower.includes('tomato')
+              ? 'pesto-pasta-kit'
+              : 'salmon-quinoa-kit',
+          servings,
+          organicOnly,
+          products: effectiveProducts,
+          activeStoreId: effectiveStoreId,
+        });
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -367,7 +395,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         },
       ]);
 
-      if (preferBlueprintInstant) {
+      if (preferBlueprintInstant || scenarioHint === 'macro-showcase') {
         const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
         dispatchEnvelopesForSurface(envelopes, surfaceId, 'Quick Action');
         setChatTurns((prev) => [
@@ -525,7 +553,24 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         updatedTempState.surfaces[surfaceId]?.dataModel ??
         currentSurface.dataModel;
 
-      if (Array.isArray(nextModel.ingredients)) {
+      if (Array.isArray(nextModel.selectedKitStyle)) {
+        const recalculated = recalculateMacroShowcaseDataModel(
+          nextModel,
+          pointerPath,
+          effectiveProducts
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: recalculated,
+            },
+          },
+          `Macro Kit Recalculation (${pointerPath})`
+        );
+      } else if (Array.isArray(nextModel.ingredients)) {
         const recalculated = recalculateMealPlannerDataModel(
           nextModel,
           pointerPath,
@@ -640,7 +685,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         return;
       }
 
-      if (name === 'swap_ingredient') {
+      if (name === 'swap_ingredient' || name === 'swap_macro_ingredient') {
         const idx = Number(context.index ?? 0);
         const swappedModel = swapMealIngredientInModel(
           currentModel,
@@ -975,7 +1020,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 )}
 
                 {surfaceState && (
-                  <div className="w-full">
+                  <div className="w-full space-y-2">
                     <A2UISurfaceRenderer
                       surface={surfaceState}
                       onAction={handleSurfaceAction}
@@ -983,6 +1028,51 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                       products={effectiveProducts}
                       showSurfaceBadge={false}
                     />
+                    {turn.scenarioHint === 'macro-showcase' && (() => {
+                      const preview = getMacroShowcaseExpansionPreview();
+                      return (
+                        <details className="bg-emerald-950/95 text-emerald-100 rounded-2xl border border-emerald-800/80 text-xs overflow-hidden shadow-xs">
+                          <summary className="px-3.5 py-2.5 font-semibold cursor-pointer flex items-center justify-between gap-2 select-none hover:bg-emerald-900/60 transition-colors">
+                            <span>
+                              🧩 A2UI v1.0 Macro Expansion Trace ({preview.report.expandedMacroCount} Macros → {preview.report.generatedComponentCount} Expanded Nodes)
+                            </span>
+                            <span className="text-[11px] font-mono text-emerald-300 bg-emerald-900/90 px-2 py-0.5 rounded-full">
+                              {preview.rawComponents.length} authored → {preview.report.totalOutputComponentCount} rendered
+                            </span>
+                          </summary>
+                          <div className="px-3.5 py-3 border-t border-emerald-800/70 space-y-2.5 bg-stone-950/70">
+                            <p className="text-[11px] text-emerald-200/90 leading-relaxed">
+                              Each <code className="text-emerald-300 font-mono">@macro:*</code> component is expanded by <code className="text-emerald-300 font-mono">A2UIMacroExpander</code> in post-order with deterministic <code className="text-emerald-300 font-mono">instance__type_N</code> child IDs, root ID stitching, and slot boundary preservation:
+                            </p>
+                            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                              {preview.report.traces.map((trace) => (
+                                <div
+                                  key={trace.instanceId}
+                                  className="p-2 rounded-xl bg-emerald-950/60 border border-emerald-800/50 space-y-1"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-mono font-bold text-emerald-300">
+                                      {trace.instanceId} ({`@macro:${trace.macroName}`})
+                                    </span>
+                                    <span className="text-[10px] font-mono text-emerald-200 bg-emerald-900/80 px-1.5 py-0.5 rounded">
+                                      root → {trace.rootComponentType}#{trace.instanceId}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] font-mono text-stone-300 break-all">
+                                    Expanded ({trace.generatedIds.length}): {trace.generatedIds.join(', ')}
+                                  </div>
+                                  {trace.preservedSlotIds.length > 0 && (
+                                    <div className="text-[10px] font-mono text-amber-300">
+                                      Preserved Slots: {trace.preservedSlotIds.join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </details>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

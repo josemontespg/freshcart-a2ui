@@ -13,10 +13,10 @@ import type { DietaryTag, Store } from '../../types/grocery';
 export interface HeroBannerProps {
   store: Store;
   onLaunchAIScenario?: (
-    scenarioId: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
+    scenarioId: 'meal-planner' | 'cart-optimizer' | 'budget-builder' | 'macro-showcase'
   ) => void;
   onOpenAIShopper?: (
-    scenarioId?: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
+    scenarioId?: 'meal-planner' | 'cart-optimizer' | 'budget-builder' | 'macro-showcase'
   ) => void;
   onQuickFilterTag?: (tag: DietaryTag) => void;
 }
@@ -31,7 +31,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     store.featuredPromoBanner.linkedScenarioId ?? 'meal-planner';
 
   const handleTriggerScenario = (
-    targetScenario: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
+    targetScenario: 'meal-planner' | 'cart-optimizer' | 'budget-builder' | 'macro-showcase'
   ) => {
     if (onLaunchAIScenario) {
       onLaunchAIScenario(targetScenario);
@@ -123,6 +123,27 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           </div>
 
           <div className="grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              onClick={() => handleTriggerScenario('macro-showcase')}
+              className="group flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-400/20 hover:bg-emerald-400/30 border border-emerald-300/30 text-left transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 rounded-lg bg-[#0AAD0A] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white">
+                    Chef Macro Meal Kit
+                  </div>
+                  <div className="text-[11px] text-emerald-100/90 truncate">
+                    Reusable UI macros · 1-click organic swaps
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-emerald-200 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </button>
+
             <button
               type="button"
               onClick={() => handleTriggerScenario('meal-planner')}

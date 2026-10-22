@@ -17,6 +17,7 @@ import {
   evaluateFunctionCall,
   unescapePointerToken,
 } from './DataModelBinder';
+import { expandFreshCartMacrosInMessage } from './macros/macroExpander';
 
 let logSeqCounter = 1;
 
@@ -221,6 +222,10 @@ export function processA2UIMessage(
       ],
     };
   }
+
+  // Expand any A2UI v1.0 macro components (`@macro:*`) into flat primitive/catalog component trees
+  const { message: expandedMessage } = expandFreshCartMacrosInMessage(message);
+  message = expandedMessage;
 
   const { kind, surfaceId } = detectEnvelopeKind(message);
 

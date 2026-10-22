@@ -8,7 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder'
+  | 'macro-showcase';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +35,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-chef-macro-kit',
+    label: '🧩 Chef Macro Meal Kit',
+    prompt:
+      'Build a customizable Chef Macro Meal Kit with reusable recipe, nutrition, and smart swap UI macros.',
+    scenarioId: 'macro-showcase',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',
