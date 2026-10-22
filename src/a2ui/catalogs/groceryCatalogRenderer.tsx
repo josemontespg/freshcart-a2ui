@@ -34,7 +34,13 @@ const A2UIProductDealCard: React.FC<{
   ctx: A2UIRenderNodeContext;
   extra?: GroceryCatalogExtraContext;
 }> = ({ ctx, extra }) => {
-  const { component, evalContext, validationState, dispatchAction } = ctx;
+  const {
+    component,
+    evalContext,
+    validationState,
+    accessibility,
+    dispatchAction,
+  } = ctx;
   const [imgError, setImgError] = useState(false);
 
   const productId = resolveDynamicString(
@@ -117,8 +123,16 @@ const A2UIProductDealCard: React.FC<{
     );
   };
 
+  const inferredRegionLabel = `${title}, $${price.toFixed(2)} per ${unit}${
+    computedSavings > 0 ? `, save $${computedSavings.toFixed(2)}` : ''
+  }`;
+  const cardAriaLabel = accessibility.label || inferredRegionLabel;
+
   return (
     <div
+      role="region"
+      aria-label={cardAriaLabel}
+      aria-describedby={accessibility.describedById}
       className={`group relative overflow-hidden rounded-2xl border p-4 transition-all ${
         isApplied
           ? 'border-[#0AAD0A]/50 bg-emerald-50/40 shadow-xs'
@@ -199,7 +213,14 @@ const A2UIProductDealCard: React.FC<{
             type="button"
             onClick={handleActionClick}
             disabled={!validationState.isValid}
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+            aria-pressed={isApplied}
+            aria-label={
+              accessibility.label
+                ? `${actionLabel}: ${accessibility.label}`
+                : `${actionLabel}: ${title}, $${price.toFixed(2)} per ${unit}`
+            }
+            aria-describedby={accessibility.describedById}
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/30 ${
               isApplied
                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                 : 'bg-[#0AAD0A] text-white hover:bg-[#089408] shadow-xs'
@@ -233,7 +254,7 @@ const A2UIProductDealCard: React.FC<{
 const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext } = ctx;
+  const { component, evalContext, accessibility } = ctx;
 
   const title = resolveDynamicString(
     component.title ?? component.label,
@@ -277,8 +298,17 @@ const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     Math.round((calories / Math.max(1, dailyTarget)) * 100)
   );
 
+  const inferredNutritionLabel = `${title} (${servings} ${
+    servings === 1 ? 'serving' : 'servings'
+  }): ${calories} calories, ${proteinGrams}g protein, ${carbsGrams}g carbs, ${fatGrams}g fat, ${fiberGrams}g fiber`;
+
   return (
-    <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/70 via-white to-stone-50/60 p-4 shadow-xs">
+    <div
+      role="region"
+      aria-label={accessibility.label || inferredNutritionLabel}
+      aria-describedby={accessibility.describedById}
+      className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/70 via-white to-stone-50/60 p-4 shadow-xs"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]">

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -80,12 +80,26 @@ import {
 } from '../DataModelBinder';
 import type { ComponentValidationState } from '../ValidationEngine';
 
+export interface ResolvedA2UIAccessibility {
+  /** Resolved `accessibility.label` (DynamicString) */
+  label?: string;
+  /** Resolved `accessibility.description` (DynamicString) */
+  description?: string;
+  /** DOM ID of the screen-reader description element when `description` is present */
+  describedById?: string;
+  /** Resolved `accessibility.live` ('off' | 'polite' | 'assertive') */
+  live?: 'off' | 'polite' | 'assertive';
+  /** Resolved `accessibility.hidden` (DynamicBoolean) */
+  hidden?: boolean;
+}
+
 export interface A2UIRenderNodeContext {
   surfaceId: string;
   component: A2UIComponentBase;
   componentsById: Record<string, A2UIComponentBase>;
   evalContext: DataEvaluationContext;
   validationState: ComponentValidationState;
+  accessibility: ResolvedA2UIAccessibility;
   renderChildNode: (
     componentId: string,
     overrideContext?: DataEvaluationContext,
@@ -352,7 +366,7 @@ export function renderA2UIIconByName(
 const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext } = ctx;
+  const { component, evalContext, accessibility } = ctx;
   const rawText = resolveDynamicString(
     component.text ?? component.label ?? '',
     evalContext,
@@ -366,37 +380,58 @@ const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const headingLevel = headingMatch ? headingMatch[1].length : 0;
   const cleanText = headingMatch ? headingMatch[2] : rawText;
 
+  const ariaProps: React.HTMLAttributes<HTMLElement> = {
+    'aria-label': accessibility.label || undefined,
+    'aria-describedby': accessibility.describedById || undefined,
+    ...(accessibility.live && accessibility.live !== 'off'
+      ? {
+          'aria-live': accessibility.live,
+          'aria-atomic': true,
+          role: accessibility.live === 'assertive' ? 'alert' : 'status',
+        }
+      : {}),
+  };
+
   if (headingLevel === 1 || variant === 'h1') {
     return (
-      <h2 className="text-lg font-bold tracking-tight text-stone-900">
+      <h2
+        {...ariaProps}
+        className="text-lg font-bold tracking-tight text-stone-900"
+      >
         {renderInlineMarkdown(cleanText)}
       </h2>
     );
   }
   if (headingLevel === 2 || variant === 'h2') {
     return (
-      <h3 className="text-base font-bold tracking-tight text-stone-900">
+      <h3
+        {...ariaProps}
+        className="text-base font-bold tracking-tight text-stone-900"
+      >
         {renderInlineMarkdown(cleanText)}
       </h3>
     );
   }
   if (headingLevel === 3 || variant === 'h3') {
     return (
-      <h4 className="text-sm font-semibold text-stone-800">
+      <h4 {...ariaProps} className="text-sm font-semibold text-stone-800">
         {renderInlineMarkdown(cleanText)}
       </h4>
     );
   }
   if (headingLevel === 4 || variant === 'h4' || variant === 'h5') {
     return (
-      <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+      <h5
+        {...ariaProps}
+        className="text-xs font-semibold uppercase tracking-wider text-stone-500"
+      >
         {renderInlineMarkdown(cleanText)}
       </h5>
     );
   }
   if (variant === 'caption') {
     return (
-      <p className="text-xs leading-relaxed text-stone-500">
+      <p {...ariaProps} className="text-xs leading-relaxed text-stone-500">
         {renderInlineMarkdown(cleanText)}
       </p>
     );
@@ -414,7 +449,10 @@ const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
   if (isBulletList) {
     return (
-      <ul className="list-disc space-y-1 pl-4 text-sm text-stone-700">
+      <ul
+        {...ariaProps}
+        className="list-disc space-y-1 pl-4 text-sm text-stone-700"
+      >
         {lines
           .filter((l) => l.trim().length > 0)
           .map((line, i) => (
@@ -427,7 +465,10 @@ const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   }
 
   return (
-    <p className="text-sm leading-relaxed text-stone-700 whitespace-pre-line">
+    <p
+      {...ariaProps}
+      className="text-sm leading-relaxed text-stone-700 whitespace-pre-line"
+    >
       {renderInlineMarkdown(cleanText)}
     </p>
   );
@@ -439,7 +480,7 @@ const A2UITextComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext } = ctx;
+  const { component, evalContext, accessibility } = ctx;
   const [hasError, setHasError] = useState(false);
 
   const url = resolveDynamicString(
@@ -447,11 +488,13 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     evalContext,
     ''
   );
-  const alt = resolveDynamicString(
-    component.alt ?? component.accessibility?.label ?? 'Product image',
-    evalContext,
-    'Product image'
-  );
+  const alt =
+    accessibility.label ||
+    resolveDynamicString(
+      component.alt ?? component.accessibility?.label ?? 'Product image',
+      evalContext,
+      'Product image'
+    );
   const fit = String(component.fit ?? 'cover');
   const variant = String(component.variant ?? 'mediumFeature');
 
@@ -480,6 +523,9 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   if (!url || hasError) {
     return (
       <div
+        role="img"
+        aria-label={alt}
+        aria-describedby={accessibility.describedById}
         className={`flex items-center justify-center bg-stone-100 text-stone-400 border border-stone-200/70 ${sizeClass}`}
       >
         <ImageIcon className="h-5 w-5" />
@@ -491,6 +537,7 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     <img
       src={url}
       alt={alt}
+      aria-describedby={accessibility.describedById}
       onError={() => setHasError(true)}
       className={`bg-stone-100 border border-stone-200/60 ${fitClass} ${sizeClass}`}
       loading="lazy"
@@ -504,7 +551,7 @@ const A2UIImageComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext } = ctx;
+  const { component, evalContext, accessibility } = ctx;
   const rawName = evaluateDynamicValue(
     component.name ?? component.icon,
     evalContext
@@ -517,7 +564,12 @@ const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     typeof (rawName as Record<string, unknown>).path === 'string'
   ) {
     return (
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]">
+      <span
+        role={accessibility.label ? 'img' : undefined}
+        aria-label={accessibility.label || undefined}
+        aria-hidden={accessibility.label ? undefined : true}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]"
+      >
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
           <path d={(rawName as { path: string }).path} />
         </svg>
@@ -527,7 +579,12 @@ const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
   const iconName = typeof rawName === 'string' ? rawName : 'sparkles';
   return (
-    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]">
+    <span
+      role={accessibility.label ? 'img' : undefined}
+      aria-label={accessibility.label || undefined}
+      aria-hidden={accessibility.label ? undefined : true}
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0AAD0A]/10 text-[#0AAD0A]"
+    >
       {renderA2UIIconByName(iconName, 'h-4 w-4')}
     </span>
   );
@@ -539,7 +596,7 @@ const A2UIIconComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UIVideoComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext } = ctx;
+  const { component, evalContext, accessibility } = ctx;
   const url = resolveDynamicString(component.url, evalContext, '');
   const poster = resolveDynamicString(component.poster, evalContext, '');
 
@@ -549,6 +606,8 @@ const A2UIVideoComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
         <video
           src={url}
           poster={poster || undefined}
+          aria-label={accessibility.label || 'Video player'}
+          aria-describedby={accessibility.describedById}
           controls
           preload="metadata"
           className="max-h-56 w-full object-cover"
@@ -569,7 +628,7 @@ const A2UIVideoComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UIAudioPlayerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext } = ctx;
+  const { component, evalContext, accessibility } = ctx;
   const url = resolveDynamicString(component.url, evalContext, '');
   const description = resolveDynamicString(
     component.description ?? component.label,
@@ -578,13 +637,25 @@ const A2UIAudioPlayerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   );
 
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 p-3.5">
+    <div
+      role="region"
+      aria-label={accessibility.label || description}
+      aria-describedby={accessibility.describedById}
+      className="flex flex-col gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 p-3.5"
+    >
       <div className="flex items-center gap-2 text-xs font-medium text-stone-700">
-        <Volume2 className="h-4 w-4 text-[#0AAD0A]" />
+        <Volume2 className="h-4 w-4 text-[#0AAD0A]" aria-hidden="true" />
         <span>{description}</span>
       </div>
       {url ? (
-        <audio src={url} controls preload="metadata" className="h-8 w-full" />
+        <audio
+          src={url}
+          aria-label={accessibility.label || description}
+          aria-describedby={accessibility.describedById}
+          controls
+          preload="metadata"
+          className="h-8 w-full"
+        />
       ) : (
         <span className="text-xs text-stone-400">No audio clip available</span>
       )}
@@ -721,7 +792,13 @@ const A2UIListComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UICardComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext, renderChildNode, renderChildList } = ctx;
+  const {
+    component,
+    evalContext,
+    accessibility,
+    renderChildNode,
+    renderChildList,
+  } = ctx;
   const title = resolveDynamicString(component.title, evalContext, '');
   const subtitle = resolveDynamicString(component.subtitle, evalContext, '');
   const badge = resolveDynamicString(component.badge, evalContext, '');
@@ -730,12 +807,32 @@ const A2UICardComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const variantClasses =
     variant === 'highlighted' || variant === 'emerald'
       ? 'border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 via-white to-white shadow-xs'
-      : variant === 'subtle'
-        ? 'border-stone-200/70 bg-stone-50/70'
-        : 'border-stone-200/80 bg-white shadow-xs';
+      : variant === 'alert' || variant === 'warning'
+        ? 'border-amber-300 bg-amber-50/90 shadow-xs'
+        : variant === 'subtle'
+          ? 'border-stone-200/70 bg-stone-50/70'
+          : 'border-stone-200/80 bg-white shadow-xs';
+
+  const cardAriaLabel = accessibility.label || title || undefined;
+  const isLive = accessibility.live && accessibility.live !== 'off';
 
   return (
-    <div className={`rounded-2xl border p-4 sm:p-5 transition-all ${variantClasses}`}>
+    <div
+      role={
+        isLive
+          ? accessibility.live === 'assertive'
+            ? 'alert'
+            : 'status'
+          : cardAriaLabel
+            ? 'region'
+            : undefined
+      }
+      aria-label={cardAriaLabel}
+      aria-describedby={accessibility.describedById}
+      aria-live={isLive ? accessibility.live : undefined}
+      aria-atomic={isLive ? true : undefined}
+      className={`rounded-2xl border p-4 sm:p-5 transition-all ${variantClasses}`}
+    >
       {(title || subtitle || badge) && (
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
@@ -768,7 +865,8 @@ const A2UICardComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext, renderChildNode } = ctx;
+  const { surfaceId, component, evalContext, accessibility, renderChildNode } =
+    ctx;
   const rawTabs = Array.isArray(component.tabs)
     ? component.tabs
     : Array.isArray(component.tabItems)
@@ -776,6 +874,7 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
       : [];
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const tabButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const safeIndex =
     activeIndex >= 0 && activeIndex < rawTabs.length ? activeIndex : 0;
 
@@ -786,11 +885,39 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const currentTab = rawTabs[safeIndex] as Record<string, unknown> | undefined;
   const activeChildId =
     typeof currentTab?.child === 'string' ? currentTab.child : '';
+  const baseId = `a2ui-tabs-${surfaceId}-${component.id}`.replace(
+    /[^a-zA-Z0-9_-]/g,
+    '-'
+  );
+
+  const handleTabKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    idx: number
+  ) => {
+    if (rawTabs.length <= 1) return;
+    let nextIdx: number | null = null;
+    if (e.key === 'ArrowRight') {
+      nextIdx = (idx + 1) % rawTabs.length;
+    } else if (e.key === 'ArrowLeft') {
+      nextIdx = (idx - 1 + rawTabs.length) % rawTabs.length;
+    } else if (e.key === 'Home') {
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      nextIdx = rawTabs.length - 1;
+    }
+    if (nextIdx !== null) {
+      e.preventDefault();
+      setActiveIndex(nextIdx);
+      tabButtonRefs.current[nextIdx]?.focus();
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3.5">
       <div
         role="tablist"
+        aria-label={accessibility.label || 'Content sections'}
+        aria-describedby={accessibility.describedById}
         className="flex flex-wrap gap-1 rounded-2xl bg-stone-100/90 p-1"
       >
         {rawTabs.map((tabItem, idx) => {
@@ -801,14 +928,23 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
             `Option ${idx + 1}`
           );
           const isSelected = idx === safeIndex;
+          const tabId = `${baseId}-tab-${idx}`;
+          const panelId = `${baseId}-panel-${idx}`;
           return (
             <button
               key={`${tabTitle}-${idx}`}
+              ref={(el) => {
+                tabButtonRefs.current[idx] = el;
+              }}
+              id={tabId}
               type="button"
               role="tab"
+              tabIndex={isSelected ? 0 : -1}
               aria-selected={isSelected}
+              aria-controls={panelId}
               onClick={() => setActiveIndex(idx)}
-              className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              onKeyDown={(e) => handleTabKeyDown(e, idx)}
+              className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/35 ${
                 isSelected
                   ? 'bg-white text-[#0AAD0A] shadow-xs'
                   : 'text-stone-600 hover:text-stone-900'
@@ -819,7 +955,12 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
           );
         })}
       </div>
-      <div role="tabpanel" className="min-w-0">
+      <div
+        id={`${baseId}-panel-${safeIndex}`}
+        role="tabpanel"
+        aria-labelledby={`${baseId}-tab-${safeIndex}`}
+        className="min-w-0"
+      >
         {activeChildId ? renderChildNode(activeChildId, evalContext) : null}
       </div>
     </div>
@@ -832,7 +973,7 @@ const A2UITabsComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext, renderChildNode } = ctx;
+  const { component, evalContext, accessibility, renderChildNode } = ctx;
   const [isOpen, setIsOpen] = useState(false);
 
   const triggerId = String(
@@ -841,11 +982,24 @@ const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const contentId = String(
     component.content ?? component.contentChild ?? ''
   ).trim();
-  const modalTitle = resolveDynamicString(
-    component.title ?? component.accessibility?.label,
-    evalContext,
-    'Details'
-  );
+  const modalTitle =
+    accessibility.label ||
+    resolveDynamicString(
+      component.title ?? component.accessibility?.label,
+      evalContext,
+      'Details'
+    );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   return (
     <div className="inline-block">
@@ -858,6 +1012,8 @@ const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
         ) : (
           <button
             type="button"
+            aria-haspopup="dialog"
+            aria-expanded={isOpen}
             className="rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
           >
             View {modalTitle}
@@ -870,6 +1026,7 @@ const A2UIModalComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
           role="dialog"
           aria-modal="true"
           aria-label={modalTitle}
+          aria-describedby={accessibility.describedById}
           className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 p-4 backdrop-blur-xs"
           onClick={() => setIsOpen(false)}
         >
@@ -911,6 +1068,7 @@ const A2UIDividerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     return (
       <div
         role="separator"
+        aria-orientation="vertical"
         className="mx-1.5 h-auto w-px self-stretch bg-stone-200/80"
       />
     );
@@ -926,8 +1084,10 @@ const A2UIButtonComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 }) => {
   const {
     component,
+    componentsById,
     evalContext,
     validationState,
+    accessibility,
     renderChildNode,
     dispatchAction,
   } = ctx;
@@ -947,6 +1107,19 @@ const A2UIButtonComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   );
   const iconName = resolveDynamicString(component.icon, evalContext, '');
   const childId = typeof component.child === 'string' ? component.child : '';
+
+  // Semantic label inference per A2UI v1.0 spec ("Infer Default Semantics"):
+  // Explicit accessibility.label overrides inferred child Text / label.
+  const childComp = childId ? componentsById[childId] : undefined;
+  const inferredChildText = childComp
+    ? resolveDynamicString(
+        childComp.text ?? childComp.label ?? '',
+        evalContext,
+        ''
+      )
+    : '';
+  const effectiveAriaLabel =
+    accessibility.label || labelText || inferredChildText || undefined;
 
   const variantClasses: Record<string, string> = {
     primary:
@@ -978,10 +1151,12 @@ const A2UIButtonComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
         type="button"
         disabled={isDisabled}
         aria-disabled={isDisabled}
+        aria-label={effectiveAriaLabel}
+        aria-describedby={accessibility.describedById}
         title={
           !validationState.isValid
             ? validationState.firstErrorMessage
-            : undefined
+            : accessibility.description || undefined
         }
         onClick={handleClick}
         className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/25 ${baseStyle} ${
@@ -1011,9 +1186,11 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
   const {
+    surfaceId,
     component,
     evalContext,
     validationState,
+    accessibility,
     updateDataModelPath,
     dispatchAction,
   } = ctx;
@@ -1024,16 +1201,29 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     evalContext,
     ''
   );
-  const helperText = resolveDynamicString(
-    component.helperText ?? component.accessibility?.description,
-    evalContext,
-    ''
-  );
+  const helperText =
+    accessibility.description ||
+    resolveDynamicString(
+      component.helperText ?? component.accessibility?.description,
+      evalContext,
+      ''
+    );
   const variant = String(
     component.variant ?? component.textFieldType ?? 'shortText'
   );
   const currentValue = resolveDynamicString(component.value, evalContext, '');
   const writablePath = resolveWritablePointerPath(component.value, evalContext);
+
+  const inputId = `a2ui-tf-${surfaceId}-${component.id}`.replace(
+    /[^a-zA-Z0-9_-]/g,
+    '-'
+  );
+  const helperId = helperText ? `${inputId}-helper` : undefined;
+  const effectiveDescribedBy =
+    [accessibility.describedById, helperId].filter(Boolean).join(' ') ||
+    undefined;
+  const effectiveAriaLabel =
+    accessibility.label || label || placeholder || 'Text input';
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -1073,19 +1263,25 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-semibold text-stone-700">{label}</label>
+        <label htmlFor={inputId} className="text-xs font-semibold text-stone-700">
+          {label}
+        </label>
       )}
       {variant === 'longText' ? (
         <textarea
+          id={inputId}
           rows={3}
           value={currentValue}
           placeholder={placeholder}
+          aria-label={effectiveAriaLabel}
+          aria-describedby={effectiveDescribedBy}
           aria-invalid={validationState.hasErrors}
           onChange={handleChange}
           className={`w-full rounded-2xl border px-3.5 py-2.5 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 ${borderClass}`}
         />
       ) : (
         <input
+          id={inputId}
           type={
             variant === 'obscured'
               ? 'password'
@@ -1097,6 +1293,8 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
           }
           value={currentValue}
           placeholder={placeholder}
+          aria-label={effectiveAriaLabel}
+          aria-describedby={effectiveDescribedBy}
           aria-invalid={validationState.hasErrors}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -1104,7 +1302,9 @@ const A2UITextFieldComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
         />
       )}
       {helperText && validationState.failedItems.length === 0 && (
-        <span className="text-[11px] text-stone-500">{helperText}</span>
+        <span id={helperId} className="text-[11px] text-stone-500">
+          {helperText}
+        </span>
       )}
       <ValidationFeedbackList validationState={validationState} />
     </div>
@@ -1118,21 +1318,31 @@ const A2UICheckBoxComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
   const {
+    surfaceId,
     component,
     evalContext,
     validationState,
+    accessibility,
     updateDataModelPath,
     dispatchAction,
   } = ctx;
 
   const label = resolveDynamicString(component.label, evalContext, '');
-  const description = resolveDynamicString(
-    component.description ?? component.subtitle,
-    evalContext,
-    ''
-  );
+  const description =
+    resolveDynamicString(
+      component.description ?? component.subtitle,
+      evalContext,
+      ''
+    ) ||
+    accessibility.description ||
+    '';
   const checked = resolveDynamicBoolean(component.value, evalContext, false);
   const writablePath = resolveWritablePointerPath(component.value, evalContext);
+  const checkboxId = `a2ui-cb-${surfaceId}-${component.id}`.replace(
+    /[^a-zA-Z0-9_-]/g,
+    '-'
+  );
+  const descId = description ? `${checkboxId}-desc` : undefined;
 
   const handleToggle = () => {
     const nextVal = !checked;
@@ -1150,10 +1360,16 @@ const A2UICheckBoxComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
   return (
     <div className="flex flex-col">
-      <label className="group flex cursor-pointer items-start gap-2.5 rounded-2xl border border-stone-200/80 bg-white px-3.5 py-2.5 transition-all hover:border-emerald-300 hover:bg-emerald-50/20">
+      <label
+        htmlFor={checkboxId}
+        className="group flex cursor-pointer items-start gap-2.5 rounded-2xl border border-stone-200/80 bg-white px-3.5 py-2.5 transition-all hover:border-emerald-300 hover:bg-emerald-50/20"
+      >
         <input
+          id={checkboxId}
           type="checkbox"
           checked={checked}
+          aria-label={accessibility.label || label || undefined}
+          aria-describedby={descId || accessibility.describedById}
           onChange={handleToggle}
           className="mt-0.5 h-4 w-4 rounded border-stone-300 accent-[#0AAD0A] focus:ring-[#0AAD0A]"
         />
@@ -1166,7 +1382,9 @@ const A2UICheckBoxComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
             {label}
           </span>
           {description && (
-            <span className="text-[11px] text-stone-500">{description}</span>
+            <span id={descId} className="text-[11px] text-stone-500">
+              {description}
+            </span>
           )}
         </div>
       </label>
@@ -1185,6 +1403,7 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     component,
     evalContext,
     validationState,
+    accessibility,
     updateDataModelPath,
     dispatchAction,
   } = ctx;
@@ -1255,12 +1474,17 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      role={isMulti ? 'group' : 'radiogroup'}
+      aria-label={accessibility.label || label || 'Selection options'}
+      aria-describedby={accessibility.describedById}
+      className="flex flex-col gap-2"
+    >
       {label && (
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-stone-700">{label}</label>
+          <span className="text-xs font-semibold text-stone-700">{label}</span>
           {isMulti && (
-            <span className="text-[11px] text-stone-400">
+            <span className="text-[11px] text-stone-500">
               {selectedValues.length} selected
             </span>
           )}
@@ -1273,6 +1497,7 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
           <input
             type="text"
             value={filterQuery}
+            aria-label={`Filter ${label || 'options'}`}
             onChange={(e) => setFilterQuery(e.target.value)}
             placeholder="Filter options..."
             className="w-full rounded-xl border border-stone-200 bg-stone-50 py-1.5 pl-8 pr-3 text-xs text-stone-700 focus:border-[#0AAD0A] focus:bg-white focus:outline-none"
@@ -1288,8 +1513,10 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
               <button
                 key={opt.value}
                 type="button"
+                role={isMulti ? 'checkbox' : 'radio'}
+                aria-checked={isSelected}
                 onClick={() => handleSelectOption(opt.value)}
-                className={`flex w-full items-center justify-between rounded-2xl border px-3.5 py-2.5 text-left text-xs transition-all cursor-pointer ${
+                className={`flex w-full items-center justify-between rounded-2xl border px-3.5 py-2.5 text-left text-xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/30 ${
                   isSelected
                     ? 'border-[#0AAD0A] bg-emerald-50/60 font-semibold text-stone-900'
                     : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
@@ -1324,8 +1551,10 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
               <button
                 key={opt.value}
                 type="button"
+                role={isMulti ? 'checkbox' : 'radio'}
+                aria-checked={isSelected}
                 onClick={() => handleSelectOption(opt.value)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/30 ${
                   isSelected
                     ? 'border-[#0AAD0A] bg-[#0AAD0A] text-white shadow-2xs'
                     : 'border-stone-200 bg-white text-stone-700 hover:border-emerald-300 hover:bg-emerald-50/40'
@@ -1350,7 +1579,14 @@ const A2UIChoicePickerComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext, validationState, updateDataModelPath } = ctx;
+  const {
+    surfaceId,
+    component,
+    evalContext,
+    validationState,
+    accessibility,
+    updateDataModelPath,
+  } = ctx;
 
   const label = resolveDynamicString(component.label, evalContext, '');
   const min = resolveDynamicNumber(component.min, evalContext, 0);
@@ -1365,6 +1601,11 @@ const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 
   const currentValue = resolveDynamicNumber(component.value, evalContext, min);
   const writablePath = resolveWritablePointerPath(component.value, evalContext);
+
+  const sliderId = `a2ui-slider-${surfaceId}-${component.id}`.replace(
+    /[^a-zA-Z0-9_-]/g,
+    '-'
+  );
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextNum = Number(e.target.value);
@@ -1382,20 +1623,34 @@ const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
     <div className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-stone-50/70 p-3.5">
       <div className="flex items-center justify-between gap-2">
         {label && (
-          <label className="text-xs font-semibold text-stone-700">{label}</label>
+          <label
+            htmlFor={sliderId}
+            className="text-xs font-semibold text-stone-700"
+          >
+            {label}
+          </label>
         )}
         <span className="rounded-full bg-emerald-100/90 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
           {displayVal}
         </span>
       </div>
       <input
+        id={sliderId}
         type="range"
         min={min}
         max={max}
         step={step}
         value={currentValue}
+        aria-label={accessibility.label || label || 'Slider'}
+        aria-describedby={accessibility.describedById}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={currentValue}
+        aria-valuetext={
+          accessibility.label || `${label ? `${label}: ` : ''}${displayVal}`
+        }
         onChange={handleSliderChange}
-        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-stone-200 accent-[#0AAD0A]"
+        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-stone-200 accent-[#0AAD0A] focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/35"
       />
       <div className="flex justify-between text-[11px] font-medium text-stone-400">
         <span>
@@ -1416,7 +1671,14 @@ const A2UISliderComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 const A2UIDateTimeInputComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   ctx,
 }) => {
-  const { component, evalContext, validationState, updateDataModelPath } = ctx;
+  const {
+    surfaceId,
+    component,
+    evalContext,
+    validationState,
+    accessibility,
+    updateDataModelPath,
+  } = ctx;
 
   const label = resolveDynamicString(component.label, evalContext, '');
   const enableDate = resolveDynamicBoolean(
@@ -1433,6 +1695,11 @@ const A2UIDateTimeInputComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   const max = resolveDynamicString(component.max, evalContext, '');
   const currentValue = resolveDynamicString(component.value, evalContext, '');
   const writablePath = resolveWritablePointerPath(component.value, evalContext);
+
+  const dtId = `a2ui-dt-${surfaceId}-${component.id}`.replace(
+    /[^a-zA-Z0-9_-]/g,
+    '-'
+  );
 
   const inputType =
     enableDate && enableTime
@@ -1455,14 +1722,19 @@ const A2UIDateTimeInputComponent: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-semibold text-stone-700">{label}</label>
+        <label htmlFor={dtId} className="text-xs font-semibold text-stone-700">
+          {label}
+        </label>
       )}
       <div className="relative">
         <input
+          id={dtId}
           type={inputType}
           min={min || undefined}
           max={max || undefined}
           value={formattedInputValue}
+          aria-label={accessibility.label || label || 'Date and time'}
+          aria-describedby={accessibility.describedById}
           onChange={(e) => {
             if (writablePath) {
               updateDataModelPath(writablePath, e.target.value);

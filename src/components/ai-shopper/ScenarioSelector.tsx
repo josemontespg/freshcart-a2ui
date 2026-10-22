@@ -8,7 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'accessible-shopper'
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +35,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-accessible-shopper',
+    label: '♿ Accessible & Allergen-Safe Shopper',
+    prompt:
+      'Launch the Accessible & Allergen-Safe Meal Planner with screen-reader live announcements, household allergen guardrails, easy-open packaging, and hands-free audio cooking steps.',
+    scenarioId: 'accessible-shopper',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',
