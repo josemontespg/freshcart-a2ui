@@ -69,7 +69,7 @@ const FreshCartWorkspace: React.FC = () => {
   // AI Personal Shopper & Surface Manager state
   const [isAIShopperOpen, setIsAIShopperOpen] = useState<boolean>(true);
   const [activeScenarioId, setActiveScenarioId] =
-    useState<ScenarioId>('meal-planner');
+    useState<ScenarioId>('macro-showcase');
 
   const [surfaceManagerState, setSurfaceManagerState] =
     useState<A2UISurfaceManagerState>(() => createInitialSurfaceManagerState());
