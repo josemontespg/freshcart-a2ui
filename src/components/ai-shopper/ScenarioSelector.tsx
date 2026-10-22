@@ -8,7 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder'
+  | 'mixed-catalogs';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +35,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-mixed-catalogs',
+    label: '🍷 3-Catalog Chef & Sommelier Showcase',
+    prompt:
+      'Launch the 3-Catalog Mixed Surface Showcase combining Basic v1.0 layout, Grocery Merchandising deals & aisle locator, and Culinary Sommelier pairing & @call functions.',
+    scenarioId: 'mixed-catalogs',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',

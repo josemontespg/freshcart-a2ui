@@ -1,9 +1,33 @@
 import {
   A2UI_BASIC_CATALOG_ID,
+  FRESHCART_CULINARY_CATALOG_ID,
+  FRESHCART_GROCERY_CATALOG_ID,
   type A2UIDataBinding,
   type A2UIFunctionCall,
   type A2UIValidationResult,
 } from '../types/a2ui-v1';
+
+/**
+ * Resolves the effective `catalogId` for an A2UI v1.0 `@call` invocation using
+ * `@a2ui/web_core/v1_0`'s strict 3-step resolution order (`resolveSurfaceCatalog`):
+ * 1. Explicit `call.catalogId` on the FunctionCall object.
+ * 2. Fallback to `surface.defaultCatalogId` (`createSurface.catalogId`).
+ *    NOTE: Nested `@call` expressions inside a custom-catalog component do NOT
+ *    inherit the enclosing component's `catalogId`!
+ * 3. System functions (`@index`) belong to no catalog (`undefined`).
+ */
+export function resolveFunctionCallCatalogId(
+  call: A2UIFunctionCall,
+  context: DataEvaluationContext
+): string | undefined {
+  if (call['@call'].startsWith('@')) {
+    return undefined;
+  }
+  if (call.catalogId !== undefined) {
+    return call.catalogId;
+  }
+  return context.defaultCatalogId;
+}
 
 export interface DataEvaluationContext {
   /** Root dataModel of the active surface */
@@ -569,6 +593,85 @@ export function evaluateFunctionCall(
         window.open(url, '_blank', 'noopener,noreferrer');
       }
       return undefined;
+    }
+
+    /**
+     * Custom Culinary Catalog Function 1 (`https://freshcart.app/catalogs/culinary/v1/catalog.json`):
+     * `calculatePerServingCost`
+     * Computes the per-guest cost of a chef meal & optional sommelier pairing, returning a formatted label.
+     */
+    case 'calculatePerServingCost': {
+      const resolvedCatalog = resolveFunctionCallCatalogId(call, context);
+      if (
+        resolvedCatalog &&
+        resolvedCatalog !== FRESHCART_CULINARY_CATALOG_ID
+      ) {
+        // In v1.0, calling a culinary function without explicit catalogId on a basicCatalog
+        // surface resolves to basicCatalog and fails unless catalogId is explicitly set.
+      }
+      const totalCost = Number(args.totalCost ?? 0);
+      const servings = Math.max(1, Number(args.servings ?? 4));
+      const includeWinePairing = coerceToBoolean(
+        args.includeWinePairing ?? false
+      );
+      const winePairingPrice = Number(args.winePairingPrice ?? 16.99);
+      const discountAmount = Number(args.discountAmount ?? 0);
+
+      const effectiveTotal = Math.max(
+        0,
+        (Number.isFinite(totalCost) ? totalCost : 0) +
+          (includeWinePairing && Number.isFinite(winePairingPrice)
+            ? winePairingPrice
+            : 0) -
+          (Number.isFinite(discountAmount) ? discountAmount : 0)
+      );
+      const perGuest = effectiveTotal / servings;
+      const suffix = includeWinePairing
+        ? ' / guest (with pairing)'
+        : ' / guest';
+      return `$${perGuest.toFixed(2)}${suffix}`;
+    }
+
+    /**
+     * Custom Culinary Catalog Function 2 (`https://freshcart.app/catalogs/culinary/v1/catalog.json`):
+     * `matchDietaryScore`
+     * Computes a 0-100 culinary & dietary harmony score from recipe & guest preferences.
+     */
+    case 'matchDietaryScore': {
+      const baseScore = Number(args.baseScore ?? 91);
+      const isOrganic = coerceToBoolean(args.isOrganic ?? true);
+      const isGlutenFree = coerceToBoolean(args.isGlutenFree ?? true);
+      const includeWinePairing = coerceToBoolean(
+        args.includeWinePairing ?? true
+      );
+      let score = Number.isFinite(baseScore) ? baseScore : 91;
+      if (isOrganic) score += 4;
+      if (isGlutenFree) score += 2;
+      if (includeWinePairing) score += 2;
+      return Math.min(100, Math.max(50, Math.round(score)));
+    }
+
+    /**
+     * Custom Grocery Merchandising Catalog Function (`https://freshcart.app/catalogs/grocery/v1/catalog.json`):
+     * `formatSavingsBadge`
+     */
+    case 'formatSavingsBadge': {
+      const originalPrice = Number(args.originalPrice ?? 0);
+      const salePrice = Number(args.salePrice ?? 0);
+      const couponSavings = Number(args.couponSavings ?? 0);
+      const totalSaved = Math.max(
+        0,
+        (originalPrice > salePrice ? originalPrice - salePrice : 0) +
+          (Number.isFinite(couponSavings) ? couponSavings : 0)
+      );
+      if (totalSaved <= 0) {
+        return 'EVERYDAY LOW PRICE';
+      }
+      if (originalPrice > 0) {
+        const pct = Math.round((totalSaved / originalPrice) * 100);
+        return `SAVE $${totalSaved.toFixed(2)} (${pct}% OFF)`;
+      }
+      return `SAVE $${totalSaved.toFixed(2)}`;
     }
 
     default:

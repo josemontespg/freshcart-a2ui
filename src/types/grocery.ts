@@ -77,7 +77,11 @@ export interface Store {
     subtitle: string;
     badgeText: string;
     ctaText: string;
-    linkedScenarioId?: 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+    linkedScenarioId?:
+      | 'meal-planner'
+      | 'cart-optimizer'
+      | 'budget-builder'
+      | 'mixed-catalogs';
   };
 }
 

@@ -1,6 +1,7 @@
 import {
   A2UI_BASIC_CATALOG_ID,
   A2UI_VERSION,
+  FRESHCART_CULINARY_CATALOG_ID,
   FRESHCART_GROCERY_CATALOG_ID,
   type A2UIActionEvent,
   type A2UIComponentBase,
@@ -325,6 +326,7 @@ export function processA2UIMessage(
     const knownCatalogs = new Set<string>([
       A2UI_BASIC_CATALOG_ID,
       FRESHCART_GROCERY_CATALOG_ID,
+      FRESHCART_CULINARY_CATALOG_ID,
     ]);
     if (!callFunction.catalogId || !knownCatalogs.has(callFunction.catalogId)) {
       const errEvent: A2UIRendererErrorEvent = {
@@ -515,6 +517,38 @@ export function validateA2UIv1Envelope(rawJsonText: string): {
         path: currentPath,
         message: `Found legacy v0.9 '{"call": "${obj.call}"}'. In A2UI v1.0, FunctionCall requires the '@' prefix: '{"@call": "${obj.call}"}'.`,
         suggestion: `Replace "call" with "@call"`,
+      });
+    }
+
+    // Detect system function (@index) illegally declaring a catalogId
+    if (
+      '@call' in obj &&
+      typeof obj['@call'] === 'string' &&
+      obj['@call'].startsWith('@') &&
+      obj.catalogId !== undefined
+    ) {
+      diagnostics.push({
+        severity: 'error',
+        code: 'SYSTEM_CALL_MUST_NOT_NAME_CATALOG',
+        path: `${currentPath}/catalogId`,
+        message: `System function '${obj['@call']}' belongs to no catalog and must not specify a 'catalogId' in A2UI v1.0.`,
+        suggestion: `Remove "catalogId" from '${obj['@call']}'`,
+      });
+    }
+
+    // Detect custom culinary catalog functions called without explicit catalogId
+    if (
+      '@call' in obj &&
+      (obj['@call'] === 'calculatePerServingCost' ||
+        obj['@call'] === 'matchDietaryScore') &&
+      obj.catalogId !== FRESHCART_CULINARY_CATALOG_ID
+    ) {
+      diagnostics.push({
+        severity: 'warning',
+        code: 'MISSING_CULINARY_FUNCTION_CATALOG_ID',
+        path: currentPath,
+        message: `Custom function '${obj['@call']}' belongs to '${FRESHCART_CULINARY_CATALOG_ID}'. Nested @call objects do NOT inherit their enclosing component's catalogId in @a2ui/web_core/v1_0 and require an explicit "catalogId".`,
+        suggestion: `Add "catalogId": "${FRESHCART_CULINARY_CATALOG_ID}" to the @call object`,
       });
     }
 

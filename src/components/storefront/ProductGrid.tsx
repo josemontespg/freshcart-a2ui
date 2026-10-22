@@ -20,7 +20,11 @@ export interface ProductGridProps {
   onOpenSubstitutes?: (product: Product) => void;
   onResetFilters?: () => void;
   onLaunchAIScenario?: (
-    scenarioId: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
+    scenarioId:
+      | 'meal-planner'
+      | 'cart-optimizer'
+      | 'budget-builder'
+      | 'mixed-catalogs'
   ) => void;
 }
 

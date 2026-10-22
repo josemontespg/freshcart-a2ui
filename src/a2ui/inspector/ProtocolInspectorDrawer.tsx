@@ -1161,9 +1161,26 @@ export const ProtocolInspectorDrawer: React.FC<
                                     {comp.checks.length} checks
                                   </span>
                                 )}
-                                {comp.catalogId && (
-                                  <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-300">
-                                    custom catalog
+                                {comp.catalogId ? (
+                                  <span
+                                    title={comp.catalogId}
+                                    className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold ${
+                                      comp.catalogId.includes('/culinary/')
+                                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                                        : comp.catalogId.includes('/grocery/')
+                                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    }`}
+                                  >
+                                    {comp.catalogId.includes('/culinary/')
+                                      ? 'culinary/v1'
+                                      : comp.catalogId.includes('/grocery/')
+                                        ? 'grocery/v1'
+                                        : 'basic/v1.0'}
+                                  </span>
+                                ) : (
+                                  <span className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
+                                    default: basic/v1.0
                                   </span>
                                 )}
                               </div>
