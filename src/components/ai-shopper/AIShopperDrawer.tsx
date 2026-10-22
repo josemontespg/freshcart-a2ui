@@ -4,6 +4,8 @@ import {
   X,
   Send,
   RotateCcw,
+  Eye,
+  Volume2,
 } from 'lucide-react';
 import {
   A2UI_VERSION,
@@ -46,6 +48,10 @@ import {
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
 import {
+  buildAccessibilityShowcaseStream,
+  recalculateAccessibilityShowcaseDataModel,
+} from '../../scenarios/accessibilityShowcaseScenario';
+import {
   buildCompactCartContext,
   buildCompactCatalogContext,
   generateA2UISurfaceWithGemini,
@@ -56,6 +62,13 @@ import {
 } from './ScenarioSelector';
 
 export type { ScenarioId };
+
+export interface LiveAriaAnnouncement {
+  id: string;
+  politeness: 'polite' | 'assertive';
+  message: string;
+  timestamp: string;
+}
 
 export interface ChatTurn {
   id: string;
@@ -90,12 +103,16 @@ export interface AIShopperDrawerProps {
 }
 
 const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
+  'accessible-shopper':
+    'Plan an allergen-safe dinner with screen-reader announcements, easy-open packaging, and hands-free audio prep steps',
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
+  'accessible-shopper':
+    'Here is your Accessible & Allergen-Safe Meal Planner with live screen-reader announcements, automatic dairy/gluten-free guardrails, easy-open packaging, and hands-free audio cooking steps:',
   'meal-planner':
     'Here is a chef-curated dinner plan you can customize by servings and dietary preferences:',
   'cart-optimizer':
@@ -155,6 +172,17 @@ function inferScenarioFromPrompt(
 ): ScenarioId {
   const lower = promptText.toLowerCase();
   if (
+    lower.includes('accessib') ||
+    lower.includes('allergen') ||
+    lower.includes('screen-reader') ||
+    lower.includes('screen reader') ||
+    lower.includes('easy-open') ||
+    lower.includes('hands-free') ||
+    lower.includes('audio')
+  ) {
+    return 'accessible-shopper';
+  }
+  if (
     lower.includes('swap') ||
     lower.includes('cart') ||
     lower.includes('sav') ||
@@ -196,7 +224,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   products: propProducts,
   cartItems: propCartItems,
   actionHandler: propActionHandler,
-  initialScenarioId = 'meal-planner',
+  initialScenarioId = 'accessible-shopper',
   activeScenarioId: controlledScenarioId,
   onScenarioChange,
   onDispatchA2UIMessage,
@@ -218,6 +246,45 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [highContrastMode, setHighContrastMode] = useState(false);
+  const [ariaFeed, setAriaFeed] = useState<LiveAriaAnnouncement[]>([
+    {
+      id: 'aria_init_1',
+      politeness: 'assertive',
+      message:
+        'Allergen Guardrail Active: Automatically swapped Sheep Milk Feta for Organic Hass Avocados and Wheat Sourdough for Gluten-Free Bread.',
+      timestamp: 'Just now',
+    },
+    {
+      id: 'aria_init_2',
+      politeness: 'polite',
+      message:
+        '5 allergen-safe ingredients selected for 4 servings ($38.45 total). Easy-open & pre-washed packaging prioritized.',
+      timestamp: 'Just now',
+    },
+  ]);
+
+  const appendAriaAnnouncement = useCallback(
+    (politeness: 'polite' | 'assertive', message: string) => {
+      if (!message.trim()) return;
+      const now = new Date();
+      const timestamp = now.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+      setAriaFeed((prev) => [
+        {
+          id: `aria_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          politeness,
+          message,
+          timestamp,
+        },
+        ...prev.slice(0, 5),
+      ]);
+    },
+    []
+  );
 
   const turnCounterRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -247,6 +314,16 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'accessible-shopper') {
+        const servings =
+          parsedNum && parsedNum >= 1 && parsedNum <= 8 ? parsedNum : 4;
+        return buildAccessibilityShowcaseStream({
+          servings,
+          products: effectiveProducts,
+          activeStoreId: effectiveStoreId,
+        });
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -367,7 +444,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         },
       ]);
 
-      if (preferBlueprintInstant) {
+      if (preferBlueprintInstant || scenarioHint === 'accessible-shopper') {
         const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
         dispatchEnvelopesForSurface(envelopes, surfaceId, 'Quick Action');
         setChatTurns((prev) => [
@@ -380,6 +457,12 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
             scenarioHint,
           },
         ]);
+        if (scenarioHint === 'accessible-shopper') {
+          appendAriaAnnouncement(
+            'polite',
+            'Launched Accessible & Allergen-Safe Meal Planner with Dairy-Free, Gluten-Free, and Nut-Free guardrails active.'
+          );
+        }
         return;
       }
 
@@ -485,17 +568,17 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     turnCounterRef.current += 1;
     const resetSurfaceId = `chat_surface_${turnCounterRef.current}`;
     const envelopes = buildFallbackEnvelopesForPrompt(
-      SCENARIO_USER_PROMPTS['meal-planner'],
-      'meal-planner'
+      SCENARIO_USER_PROMPTS['accessible-shopper'],
+      'accessible-shopper'
     );
     dispatchEnvelopesForSurface(envelopes, resetSurfaceId, 'Reset Chat');
     setChatTurns([
       {
         id: `turn_${turnCounterRef.current}`,
         role: 'assistant',
-        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Tell me what you'd like to cook, ask for a weekly meal plan, or let me find savings in your cart.`,
+        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Tell me what you'd like to cook, ask for an allergen-safe meal plan, or let me find savings in your cart.`,
         surfaceId: resetSurfaceId,
-        scenarioHint: 'meal-planner',
+        scenarioHint: 'accessible-shopper',
       },
     ]);
   }, [
@@ -525,7 +608,56 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         updatedTempState.surfaces[surfaceId]?.dataModel ??
         currentSurface.dataModel;
 
-      if (Array.isArray(nextModel.ingredients)) {
+      if ('selectedAllergens' in nextModel) {
+        const recalculated = recalculateAccessibilityShowcaseDataModel(
+          nextModel,
+          pointerPath,
+          effectiveProducts
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: recalculated,
+            },
+          },
+          `Accessible Shopper Recalculation (${pointerPath})`
+        );
+
+        if (pointerPath.startsWith('/selectedAllergens')) {
+          appendAriaAnnouncement(
+            'assertive',
+            String(
+              recalculated.allergenAlertDetail ??
+                'Updated household allergen guardrails.'
+            )
+          );
+        } else if (pointerPath.startsWith('/showVoiceCookingGuide')) {
+          appendAriaAnnouncement(
+            'polite',
+            recalculated.showVoiceCookingGuide
+              ? 'Hands-free audio cooking guide is now visible to screen readers.'
+              : 'Hands-free audio cooking guide hidden (accessibility.hidden = true).'
+          );
+        } else if (pointerPath.startsWith('/showAllergenBanner')) {
+          appendAriaAnnouncement(
+            'polite',
+            recalculated.showAllergenBanner
+              ? 'Allergen safety substitution banner restored.'
+              : 'Allergen safety substitution banner hidden (accessibility.hidden = true).'
+          );
+        } else {
+          appendAriaAnnouncement(
+            'polite',
+            String(
+              recalculated.liveStatusSummary ??
+                'Updated accessible meal plan preferences.'
+            )
+          );
+        }
+      } else if (Array.isArray(nextModel.ingredients)) {
         const recalculated = recalculateMealPlannerDataModel(
           nextModel,
           pointerPath,
@@ -586,6 +718,43 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const currentSurface = mergedSurfaces[surfaceId];
       const currentModel = currentSurface?.dataModel ?? {};
 
+      if (name === 'read_accessible_summary_aloud') {
+        const spokenScript = String(
+          context.spokenScript ??
+            currentModel.spokenSummaryScript ??
+            currentModel.liveStatusSummary ??
+            'Allergen-safe meal plan ready.'
+        );
+        if (
+          typeof window !== 'undefined' &&
+          'speechSynthesis' in window &&
+          typeof SpeechSynthesisUtterance !== 'undefined'
+        ) {
+          try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(spokenScript);
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+          } catch {
+            // Ignore speech synthesis errors on headless browsers
+          }
+        }
+        const confirmAudioMsg = `Reading aloud: "${spokenScript.slice(0, 96)}..."`;
+        appendAriaAnnouncement('polite', spokenScript);
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/statusBanner',
+              value: confirmAudioMsg,
+            },
+          },
+          'Read Summary Aloud'
+        );
+        return;
+      }
+
       if (name === 'add_recipe_bundle_to_cart') {
         const servings = Number(context.servings ?? currentModel.servings ?? 4);
         const rawIngredients = Array.isArray(context.ingredients)
@@ -620,6 +789,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           );
 
           const confirmationMsg = `Added ${checkedItems.length} ingredients (${servings} servings) to your cart ✓`;
+          appendAriaAnnouncement('polite', confirmationMsg);
           dispatchMessage(
             {
               version: A2UI_VERSION,
@@ -898,15 +1068,21 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
 
   if (!isOpen) return null;
 
+  const highContrastClasses = highContrastMode
+    ? '[&_p]:!text-stone-950 [&_span]:! contrast-125 [&_button]:!ring-offset-1 [&_input]:!border-stone-900'
+    : '';
+
   const containerClasses =
     mode === 'drawer'
-      ? 'fixed inset-y-0 right-0 z-40 w-full max-w-[500px] h-dvh shadow-2xl flex flex-col bg-[#FAF8F5] border-l border-stone-200/80 overflow-hidden'
-      : 'h-full w-full flex flex-col bg-[#FAF8F5] overflow-hidden';
+      ? `fixed inset-y-0 right-0 z-40 w-full max-w-[500px] h-dvh shadow-2xl flex flex-col bg-[#FAF8F5] border-l border-stone-200/80 overflow-hidden ${highContrastClasses}`
+      : `h-full w-full flex flex-col bg-[#FAF8F5] overflow-hidden ${highContrastClasses}`;
+
+  const latestAnnouncement = ariaFeed[0];
 
   return (
     <aside className={containerClasses} aria-label="AI Personal Shopper Chat">
       {/* Minimal Chat Header */}
-      <div className="bg-white border-b border-stone-200/80 px-4 py-3.5 flex items-center justify-between gap-3 shrink-0">
+      <div className="bg-white border-b border-stone-200/80 px-4 py-3 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-full bg-[#0AAD0A] flex items-center justify-center shrink-0 shadow-2xs">
             <Sparkles className="w-4 h-4 text-white" />
@@ -916,12 +1092,36 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               AI Personal Shopper
             </h2>
             <p className="text-[11px] text-stone-500 truncate">
-              {effectiveStoreName}
+              {effectiveStoreName} · Accessible & Allergen-Safe
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            aria-pressed={highContrastMode}
+            onClick={() => {
+              const next = !highContrastMode;
+              setHighContrastMode(next);
+              appendAriaAnnouncement(
+                'polite',
+                next
+                  ? 'High-contrast and enhanced focus mode enabled.'
+                  : 'Standard visual contrast restored.'
+              );
+            }}
+            title="Toggle High-Contrast & Large-Focus Accessible Mode"
+            aria-label="Toggle High-Contrast and Large-Focus Accessible Mode"
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${
+              highContrastMode
+                ? 'border-stone-950 bg-stone-950 text-white shadow-xs'
+                : 'border-stone-200 bg-stone-50 text-stone-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-900'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>AA Contrast</span>
+          </button>
           <button
             type="button"
             onClick={handleResetChat}
@@ -944,8 +1144,53 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         </div>
       </div>
 
+      {/* Live Screen-Reader Announcement Feed (aria-live monitor) */}
+      {latestAnnouncement && (
+        <div
+          role="region"
+          aria-label="Live screen reader announcement monitor"
+          className={`px-4 py-2 border-b text-xs flex items-start gap-2 shrink-0 transition-colors ${
+            latestAnnouncement.politeness === 'assertive'
+              ? 'bg-amber-50/95 border-amber-200 text-amber-950'
+              : 'bg-emerald-50/80 border-emerald-200/80 text-emerald-950'
+          }`}
+        >
+          <Volume2
+            className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+              latestAnnouncement.politeness === 'assertive'
+                ? 'text-amber-700'
+                : 'text-[#0AAD0A]'
+            }`}
+            aria-hidden="true"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`inline-flex items-center rounded-md px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider ${
+                  latestAnnouncement.politeness === 'assertive'
+                    ? 'bg-amber-200/80 text-amber-950'
+                    : 'bg-emerald-200/70 text-emerald-900'
+                }`}
+              >
+                aria-live: {latestAnnouncement.politeness}
+              </span>
+              <span className="text-[10px] text-stone-500">
+                {latestAnnouncement.timestamp}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[11px] font-medium leading-snug line-clamp-2">
+              {latestAnnouncement.message}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Scrollable Chat Thread */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5">
+      <div
+        className={`flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5 ${
+          highContrastMode ? 'text-base' : ''
+        }`}
+      >
         {chatTurns.map((turn) => {
           if (turn.role === 'user') {
             return (
@@ -1013,19 +1258,31 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       {/* Bottom Chat Composer + Quick Suggestion Pills */}
       <div className="bg-white border-t border-stone-200/80 p-3 space-y-2.5 shrink-0">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          {QUICK_PROMPT_CHIPS.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              disabled={isGenerating}
-              onClick={() =>
-                void sendUserMessage(chip.label, chip.scenarioId)
-              }
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70 transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer"
-            >
-              {chip.label}
-            </button>
-          ))}
+          {QUICK_PROMPT_CHIPS.map((chip) => {
+            const isAccessibilityChip =
+              chip.scenarioId === 'accessible-shopper';
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                disabled={isGenerating}
+                onClick={() =>
+                  void sendUserMessage(
+                    chip.label,
+                    chip.scenarioId,
+                    isAccessibilityChip
+                  )
+                }
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer ${
+                  isAccessibilityChip
+                    ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700 shadow-2xs'
+                    : 'bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70'
+                }`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
         </div>
 
         <form onSubmit={handleFormSubmit} className="relative flex items-center">
@@ -1034,7 +1291,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
             value={inputValue}
             disabled={isGenerating}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask for a recipe, meal plan, or cart swap..."
+            placeholder="Ask for an allergen-safe recipe, meal plan, or cart swap..."
             aria-label="Message AI Personal Shopper"
             className="w-full text-sm bg-stone-100/80 border border-stone-200/90 focus:border-[#0AAD0A] focus:bg-white rounded-full pl-4 pr-11 py-2.5 text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/15 transition-all disabled:opacity-60"
           />

@@ -197,17 +197,48 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
     const nextVisited = new Set(visitedIds);
     nextVisited.add(visitKey);
 
-    // Respect accessibility.hidden if dynamically bound
-    if (comp.accessibility?.hidden !== undefined) {
-      const isHidden = resolveDynamicBoolean(
-        comp.accessibility.hidden,
-        evalContext,
-        false
-      );
-      if (isHidden) {
-        return null;
-      }
+    // Respect accessibility.hidden if dynamically bound or literal true
+    const isA11yHidden =
+      comp.accessibility?.hidden !== undefined
+        ? resolveDynamicBoolean(comp.accessibility.hidden, evalContext, false)
+        : false;
+    if (isA11yHidden) {
+      return null;
     }
+
+    const nodeKey =
+      keySuffix !== undefined ? `${comp.id}-${keySuffix}` : comp.id;
+
+    const resolvedA11yLabel =
+      comp.accessibility?.label !== undefined
+        ? resolveDynamicString(
+            comp.accessibility.label,
+            evalContext,
+            ''
+          ).trim() || undefined
+        : undefined;
+
+    const resolvedA11yDescription =
+      comp.accessibility?.description !== undefined
+        ? resolveDynamicString(
+            comp.accessibility.description,
+            evalContext,
+            ''
+          ).trim() || undefined
+        : undefined;
+
+    const rawLive = comp.accessibility?.live;
+    const resolvedA11yLive: 'off' | 'polite' | 'assertive' | undefined =
+      rawLive === 'polite' || rawLive === 'assertive' || rawLive === 'off'
+        ? rawLive
+        : undefined;
+
+    const describedById = resolvedA11yDescription
+      ? `a2ui-desc-${surface.surfaceId}-${nodeKey}`.replace(
+          /[^a-zA-Z0-9_-]/g,
+          '-'
+        )
+      : undefined;
 
     const validationState = evaluateComponentChecks(comp.checks, evalContext);
 
@@ -217,6 +248,13 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
       componentsById,
       evalContext,
       validationState,
+      accessibility: {
+        label: resolvedA11yLabel,
+        description: resolvedA11yDescription,
+        describedById,
+        live: resolvedA11yLive,
+        hidden: isA11yHidden,
+      },
       renderChildNode: (childId, overrideCtx, suffix) =>
         renderNodeInternal(
           childId,
@@ -253,11 +291,18 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
       return null;
     }
 
-    const nodeKey =
-      keySuffix !== undefined ? `${comp.id}-${keySuffix}` : comp.id;
-    const ariaLabel = comp.accessibility?.label
-      ? resolveDynamicString(comp.accessibility.label, evalContext, '')
-      : undefined;
+    const srDescriptionNode =
+      describedById && resolvedA11yDescription ? (
+        <span id={describedById} className="sr-only">
+          {resolvedA11yDescription}
+        </span>
+      ) : null;
+
+    const isContainerLive =
+      resolvedA11yLive &&
+      resolvedA11yLive !== 'off' &&
+      comp.component !== 'Text' &&
+      comp.component !== 'Card';
 
     if (typeof comp.weight === 'number' && comp.weight > 0) {
       return (
@@ -265,15 +310,38 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
           key={nodeKey}
           style={{ flex: comp.weight }}
           className="min-w-0"
-          aria-label={ariaLabel || undefined}
+          aria-label={resolvedA11yLabel || undefined}
+          aria-describedby={describedById}
+          aria-live={isContainerLive ? resolvedA11yLive : undefined}
+          aria-atomic={isContainerLive ? true : undefined}
         >
           {renderedElement}
+          {srDescriptionNode}
+        </div>
+      );
+    }
+
+    if (isContainerLive) {
+      return (
+        <div
+          key={nodeKey}
+          role={resolvedA11yLive === 'assertive' ? 'alert' : 'status'}
+          aria-live={resolvedA11yLive}
+          aria-atomic="true"
+          aria-label={resolvedA11yLabel || undefined}
+          aria-describedby={describedById}
+        >
+          {renderedElement}
+          {srDescriptionNode}
         </div>
       );
     }
 
     return (
-      <React.Fragment key={nodeKey}>{renderedElement}</React.Fragment>
+      <React.Fragment key={nodeKey}>
+        {renderedElement}
+        {srDescriptionNode}
+      </React.Fragment>
     );
   };
 
