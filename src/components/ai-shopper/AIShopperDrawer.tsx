@@ -1,9 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Sparkles,
   X,
   Send,
   RotateCcw,
+  FileCode2,
+  Copy,
+  Check,
+  Download,
+  Search,
 } from 'lucide-react';
 import {
   A2UI_VERSION,
@@ -28,6 +33,13 @@ import {
   recordOutboundActionEvent,
 } from '../../a2ui/SurfaceManager';
 import {
+  buildFreshCartSkillBundle,
+  SkillGenerator,
+  patchedBasicCatalog,
+  freshCartGroceryExtensionCatalog,
+  type SkillInferenceFormat,
+} from '../../a2ui/skillGenerator';
+import {
   buildMealPlannerStream,
   recalculateMealPlannerDataModel,
   swapMealIngredientInModel,
@@ -45,6 +57,7 @@ import {
   recalculateBudgetBuilderDataModel,
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
+import { buildSkillChefStream } from '../../scenarios/skillGenerationScenario';
 import {
   buildCompactCartContext,
   buildCompactCatalogContext,
@@ -93,6 +106,8 @@ const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
+  'skill-generator':
+    "Use the compiled FreshCart A2UI v1.0 SkillSet (a2ui-core + a2ui-basic + a2ui-grocery) to build a Chef's Seasonal Farmers Market Basket for 4 guests",
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
@@ -102,6 +117,8 @@ const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
     'I checked your cart against store inventory and found these smart swaps and backups:',
   'budget-builder':
     'Here is a customizable weekly budget and nutrition plan tailored for your kitchen:',
+  'skill-generator':
+    "Compiled from live @a2ui/web_core Catalog.toJson() schemas via SkillGenerator (a2ui-core/SKILL.md + a2ui-basic/SKILL.md + a2ui-grocery/SKILL.md). Customize your Chef's Seasonal Market Basket below:",
 };
 
 function rewriteEnvelopesSurfaceId(
@@ -154,6 +171,14 @@ function inferScenarioFromPrompt(
   fallback: ScenarioId = 'meal-planner'
 ): ScenarioId {
   const lower = promptText.toLowerCase();
+  if (
+    lower.includes('skill') ||
+    lower.includes('skill.md') ||
+    lower.includes('farmers market') ||
+    lower.includes('tasting')
+  ) {
+    return 'skill-generator';
+  }
   if (
     lower.includes('swap') ||
     lower.includes('cart') ||
@@ -219,6 +244,73 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Interactive A2UI v1.0 SkillGenerator (`SKILL.md`) Inspector state
+  const [isSkillPanelOpen, setIsSkillPanelOpen] = useState(false);
+  const [skillFormat, setSkillFormat] =
+    useState<SkillInferenceFormat>('direct_json');
+  const [selectedSkillFilename, setSelectedSkillFilename] =
+    useState<string>('a2ui-grocery/SKILL.md');
+  const [skillLookupQuery, setSkillLookupQuery] = useState('');
+  const [copiedSkill, setCopiedSkill] = useState(false);
+
+  const skillBundle = useMemo(
+    () => buildFreshCartSkillBundle(skillFormat),
+    [skillFormat]
+  );
+
+  const liveSkillSet = useMemo(() => {
+    const gen = new SkillGenerator(skillFormat);
+    return gen.generateMultiCatalogSkillset([
+      {
+        catalog: patchedBasicCatalog,
+        name: 'a2ui-basic',
+      },
+      {
+        catalog: freshCartGroceryExtensionCatalog,
+        name: 'a2ui-grocery',
+      },
+    ]);
+  }, [skillFormat]);
+
+  const allCompiledSkills = useMemo(
+    () => [...skillBundle.modularSkills, skillBundle.monolithicSkill],
+    [skillBundle]
+  );
+
+  const resolvedLookupSkill = useMemo(() => {
+    if (!skillLookupQuery.trim()) return undefined;
+    return liveSkillSet.get(skillLookupQuery.trim());
+  }, [liveSkillSet, skillLookupQuery]);
+
+  const activeSkillEntry = useMemo(
+    () =>
+      allCompiledSkills.find((s) => s.filename === selectedSkillFilename) ??
+      skillBundle.modularSkills[0],
+    [allCompiledSkills, selectedSkillFilename, skillBundle.modularSkills]
+  );
+
+  const handleCopySkillMarkdown = useCallback(() => {
+    if (!activeSkillEntry) return;
+    void navigator.clipboard?.writeText(activeSkillEntry.markdown);
+    setCopiedSkill(true);
+    window.setTimeout(() => setCopiedSkill(false), 1800);
+  }, [activeSkillEntry]);
+
+  const handleDownloadSkillMarkdown = useCallback(() => {
+    if (!activeSkillEntry) return;
+    const blob = new Blob([activeSkillEntry.markdown], {
+      type: 'text/markdown;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeSkillEntry.name}-SKILL.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [activeSkillEntry]);
+
   const turnCounterRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -247,6 +339,23 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'skill-generator') {
+        const servings =
+          parsedNum && parsedNum >= 1 && parsedNum <= 12 ? parsedNum : 4;
+        const themeId =
+          lower.includes('chicken') || lower.includes('tuscan')
+            ? 'tuscan-harvest-chicken'
+            : 'farmers-market-salmon';
+        return buildSkillChefStream({
+          themeId,
+          servings,
+          organicOnly: !lower.includes('regular'),
+          glutenFree: true,
+          products: effectiveProducts,
+          activeStoreId: effectiveStoreId,
+        });
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -921,7 +1030,21 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsSkillPanelOpen((prev) => !prev)}
+            title="Inspect compiled A2UI v1.0 Agent Skills (SKILL.md)"
+            aria-label="Inspect compiled A2UI v1.0 Agent Skills"
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
+              isSkillPanelOpen
+                ? 'bg-emerald-50 text-[#0AAD0A] border-emerald-300'
+                : 'bg-stone-100/90 text-stone-700 border-stone-200/80 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200'
+            }`}
+          >
+            <FileCode2 className="w-3.5 h-3.5 text-[#0AAD0A]" />
+            <span>SKILL.md ({skillBundle.modularSkills.length})</span>
+          </button>
           <button
             type="button"
             onClick={handleResetChat}
@@ -943,6 +1066,123 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           )}
         </div>
       </div>
+
+      {/* Collapsible A2UI v1.0 SkillGenerator (`SKILL.md`) Package Viewer */}
+      {isSkillPanelOpen && activeSkillEntry && (
+        <div className="bg-stone-900 text-stone-100 border-b border-stone-800 px-4 py-3 space-y-2.5 shrink-0 max-h-[340px] flex flex-col">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                SkillGenerator
+              </span>
+              <span className="text-xs font-bold text-white">
+                Catalog-to-Skill Compiler (@a2ui/web_core Catalog.toJson)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 bg-stone-800 rounded-full p-0.5 border border-stone-700">
+              {(['direct_json', 'express'] as const).map((fmt) => (
+                <button
+                  key={fmt}
+                  type="button"
+                  onClick={() => setSkillFormat(fmt)}
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-colors cursor-pointer ${
+                    skillFormat === fmt
+                      ? 'bg-[#0AAD0A] text-white'
+                      : 'text-stone-400 hover:text-stone-200'
+                  }`}
+                >
+                  {fmt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Skill File Tabs + 3-Tier SkillSet.get(query) Tester */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+              {allCompiledSkills.map((s) => (
+                <button
+                  key={s.filename}
+                  type="button"
+                  onClick={() => setSelectedSkillFilename(s.filename)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-colors whitespace-nowrap cursor-pointer ${
+                    activeSkillEntry.filename === s.filename
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
+                      : 'bg-stone-800/80 text-stone-400 hover:text-stone-200 border border-stone-700/70'
+                  }`}
+                >
+                  {s.filename}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex items-center">
+                <Search className="w-3 h-3 text-stone-400 absolute left-2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={skillLookupQuery}
+                  onChange={(e) => {
+                    const q = e.target.value;
+                    setSkillLookupQuery(q);
+                    const hit = liveSkillSet.get(q.trim());
+                    if (hit) setSelectedSkillFilename(hit.filename);
+                  }}
+                  placeholder="SkillSet.get(query)..."
+                  aria-label="Test 3-tier SkillSet.get(query)"
+                  className="bg-stone-800 border border-stone-700 rounded-lg pl-6 pr-2 py-1 text-[10px] font-mono text-stone-200 placeholder:text-stone-500 focus:outline-none focus:border-emerald-400 w-36"
+                />
+              </div>
+              {skillLookupQuery.trim() && (
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                    resolvedLookupSkill
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : 'bg-rose-500/20 text-rose-300'
+                  }`}
+                >
+                  {resolvedLookupSkill
+                    ? `→ ${resolvedLookupSkill.name}`
+                    : 'undefined'}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleCopySkillMarkdown}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-[10px] font-medium border border-stone-700 cursor-pointer"
+                title="Copy SKILL.md"
+              >
+                {copiedSkill ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-400" />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadSkillMarkdown}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-[10px] font-medium border border-stone-700 cursor-pointer"
+                title="Download SKILL.md"
+              >
+                <Download className="w-3 h-3" />
+                <span>.md</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Compiled SKILL.md Preview */}
+          <pre className="flex-1 min-h-0 overflow-y-auto rounded-xl bg-stone-950/90 border border-stone-800 p-2.5 text-[11px] font-mono leading-relaxed text-emerald-100/90 whitespace-pre-wrap">
+            {activeSkillEntry.markdown}
+          </pre>
+        </div>
+      )}
 
       {/* Scrollable Chat Thread */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5">

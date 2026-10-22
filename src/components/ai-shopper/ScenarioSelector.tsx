@@ -8,7 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder'
+  | 'skill-generator';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +35,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-skill-chef',
+    label: '🧑‍🍳 Chef Skill: Seasonal Market Basket',
+    prompt:
+      "Use the compiled FreshCart A2UI v1.0 SkillSet (a2ui-core + a2ui-basic + a2ui-grocery) to build a Chef's Seasonal Farmers Market Basket for 4 guests with NutritionSummary and ProductDealCard.",
+    scenarioId: 'skill-generator',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',
