@@ -216,7 +216,7 @@ def cmd_file(sleep_sec: float, limit: int):
         try:
             attempt = 0
             issue_url = None
-            while attempt < 3:
+            while attempt < 6:
                 attempt += 1
                 proc = subprocess.run(
                     [
@@ -243,16 +243,28 @@ def cmd_file(sleep_sec: float, limit: int):
                         if line.strip().startswith("https://github.com/")
                     ]
                     issue_url = out_lines[-1] if out_lines else proc.stdout.strip()
+                    issue_url = issue_url.replace(
+                        "https://github.com/a2ui-project/a2ui/",
+                        "https://github.com/google/A2UI/",
+                    )
                     break
                 else:
                     err_msg = proc.stderr.strip()
                     print(
-                        f"  [Attempt {attempt}/3] Error creating {iid}: {err_msg}",
+                        f"  [Attempt {attempt}/6] Error creating {iid}: {err_msg}",
                         flush=True,
                     )
-                    if "rate limit" in err_msg.lower() or "abuse" in err_msg.lower() or "secondary" in err_msg.lower():
-                        wait_backoff = 30 * attempt
-                        print(f"  Rate limit detected; sleeping {wait_backoff}s...", flush=True)
+                    if (
+                        "rate limit" in err_msg.lower()
+                        or "abuse" in err_msg.lower()
+                        or "secondary" in err_msg.lower()
+                        or "submitted too quickly" in err_msg.lower()
+                    ):
+                        wait_backoff = 45 * attempt
+                        print(
+                            f"  Rate limit detected; sleeping {wait_backoff}s...",
+                            flush=True,
+                        )
                         time.sleep(wait_backoff)
                     else:
                         time.sleep(5 * attempt)

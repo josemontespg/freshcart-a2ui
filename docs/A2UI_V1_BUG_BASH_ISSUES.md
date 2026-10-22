@@ -3,7 +3,7 @@
 - **Target Repository**: [`https://github.com/google/A2UI`](https://github.com/google/A2UI) (`commit e9dbcc3`)
 - **GitHub Issue Label**: `v1-bug-bash`
 - **Total Deduplicated Issues**: **104** (**55 Bugs** + **49 Documentation Gaps**)
-- **Filing Progress**: **0 / 104 Created**
+- **Filing Progress**: **104 / 104 Created**
 
 ---
 
@@ -11,116 +11,116 @@
 
 | # | Issue ID | Type | Feature Area | Title | Status | GitHub Issue |
 |---|---|---|---|---|---|---|
-| 1 | `ISSUE-01-01` | `Bug` | Web Components & Universal Elements (@a2ui/react) | [v1.0][react] Importing @a2ui/react in Node.js / SSR crashes with ReferenceError: HTMLElement is not defined in ReactWcHost | `[ ] PENDING` | _Not created yet_ |
-| 2 | `ISSUE-01-02` | `Bug` | Web Components & Universal Elements (@a2ui/web_core) | [v1.0][web_core] A2uiLitElement.adoptLightDomStyles() unconditionally leaks Shadow DOM styles into document.adoptedStyleSheets | `[ ] PENDING` | _Not created yet_ |
-| 3 | `ISSUE-01-03` | `Bug` | Web Components & Universal Elements (@a2ui/react) | [v1.0][react] @a2ui/react@0.14.0 hardcodes @a2ui/web_core/v0_9 imports and lacks a ./v1_0 export subpath | `[ ] PENDING` | _Not created yet_ |
-| 4 | `ISSUE-01-04` | `Bug` | Web Components & Universal Elements (@a2ui/web_core) | [v1.0][web_core] toWebComponentImplementation is omitted from @a2ui/web_core/universal barrel export | `[ ] PENDING` | _Not created yet_ |
-| 5 | `ISSUE-01-05` | `Bug` | Web Components & Universal Elements (@a2ui/react) | [v1.0][react] toWebComponent() computeTagName leaks <a2ui-react-name-N> custom element registrations across HMR and unmemoized catalogs | `[ ] PENDING` | _Not created yet_ |
-| 6 | `ISSUE-01-06` | `Documentation Gap` | Web Components & Universal Elements (Documentation) | [v1.0][docs] authoring-universal-components.md exclusively documents v0.9 imports and legacy {"path": "..."} bindings with zero v1.0 examples | `[ ] PENDING` | _Not created yet_ |
-| 7 | `ISSUE-01-07` | `Documentation Gap` | Web Components & Universal Elements (Documentation) | [v1.0][docs] toWebComponentImplementation(element, api) and TaggedCustomElementConstructor are undocumented in authoring-universal-components.md | `[ ] PENDING` | _Not created yet_ |
-| 8 | `ISSUE-01-08` | `Documentation Gap` | Web Components & Universal Elements (Documentation / JSDoc) | [v1.0][docs][web_core] Contradictory documentation between A2uiLitElement JSDoc and authoring-universal-components.md on Light DOM vs Shadow DOM default | `[ ] PENDING` | _Not created yet_ |
-| 9 | `ISSUE-01-09` | `Documentation Gap` | Web Components & Universal Elements (@a2ui/react Documentation) | [v1.0][docs][react] Undocumented <a2ui-react-*> ReactWcHost wrapper elements and display: contents DOM structure in @a2ui/react | `[ ] PENDING` | _Not created yet_ |
-| 10 | `ISSUE-02-01` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][catalog-mcp] @a2ui/catalog-mcp@0.0.1-alpha.1 ships v0.9 catalog.json and omits v1.0 McpApp component & sandbox.html | `[ ] PENDING` | _Not created yet_ |
-| 11 | `ISSUE-02-02` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Security][mcp-apps] Community Lit MCP App sample passes allow-same-origin to inner sandbox iframe, defeating double-iframe isolation | `[ ] PENDING` | _Not created yet_ |
-| 12 | `ISSUE-02-03` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][sandbox] typescript/catalogs/shared/sandbox/sandbox.ts only filters allow-same-origin and fails to strip allow-top-navigation and allow-popups | `[ ] PENDING` | _Not created yet_ |
-| 13 | `ISSUE-02-04` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][catalog-mcp] catalogs/mcp/v1/catalog.json omits 'height' property on McpApp despite SandboxedFrameElement reading frameHeightFromProp | `[ ] PENDING` | _Not created yet_ |
-| 14 | `ISSUE-02-05` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][catalog-mcp] callMcpTool.ts hardcodes version: 'v0.9' in ensureMessageVersion and ignores v1.0 targetDataPath | `[ ] PENDING` | _Not created yet_ |
-| 15 | `ISSUE-02-06` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][catalog-mcp] catalogs/mcp/README.md does not document v0.9-only status or missing McpApp component in @a2ui/catalog-mcp | `[ ] PENDING` | _Not created yet_ |
-| 16 | `ISSUE-02-07` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][mcp-apps] docs/public/guides/mcp-apps-in-a2ui.md uses legacy v0.8/v0.9 "type": "custom" schema instead of v1.0 "component": "McpApp" | `[ ] PENDING` | _Not created yet_ |
-| 17 | `ISSUE-02-08` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][mcp-apps] Broken relative link to mcp-apps-component.ts in docs/public/guides/mcp-apps-in-a2ui.md | `[ ] PENDING` | _Not created yet_ |
-| 18 | `ISSUE-02-09` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][v1.0][mcp] Undocumented 'url_encoded:' prefix convention for McpApp.htmlContent in catalogs/mcp/v1/mcp_app_specification.md | `[ ] PENDING` | _Not created yet_ |
-| 19 | `ISSUE-02-10` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][react][mcp] Missing React integration guide and /a2ui-sandbox/sandbox.html hosting instructions for McpApp | `[ ] PENDING` | _Not created yet_ |
-| 20 | `ISSUE-02-12` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] PayloadValidator.validateComponent enforces UAX #31 on component instance 'id', rejecting hyphenated IDs used in the v1.0 spec | `[ ] PENDING` | _Not created yet_ |
-| 21 | `ISSUE-02-13` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] A2uiBasicTextElement throws EventTarget.dispatchEvent TypeError in JSDOM when consuming @lit/context | `[ ] PENDING` | _Not created yet_ |
-| 22 | `ISSUE-02-14` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Packaging][web_core] @a2ui/web_core@0.14.0 npm tarball ships .tsbuildinfo (182 KB) and compiled *.test.js / *.test.d.ts files | `[ ] PENDING` | _Not created yet_ |
-| 23 | `ISSUE-02-15` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] MessageProcessor options.version defaults to 'v0.9' even when initialized exclusively with v1.0 catalogs | `[ ] PENDING` | _Not created yet_ |
-| 24 | `ISSUE-02-16` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] V1Point0Adapter reads createSurface.theme, but CreateSurfaceMessageSchema rejects 'theme' due to .strict() | `[ ] PENDING` | _Not created yet_ |
-| 25 | `ISSUE-02-17` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] PayloadValidator.stripEnvelopeKeys deletes 'id' before running componentApi.schema, breaking custom schemas extending ComponentCommonSchema | `[ ] PENDING` | _Not created yet_ |
-| 26 | `ISSUE-02-18` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0][react] Public docs list React v1.0 support as '🚧 Planned' and omit a React v1.0 quickstart despite @a2ui/web_core@0.14.0 shipping './v1_0' | `[ ] PENDING` | _Not created yet_ |
-| 27 | `ISSUE-02-19` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][react] docs/public/guides/client-setup.md references nonexistent <A2UISurface> and useA2UI() hook and has no React code example | `[ ] PENDING` | _Not created yet_ |
-| 28 | `ISSUE-02-20` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0] 'v0.9 and later' tabs in public docs teach {"path": "..."}, {"call": "..."}, and Text variant "h1" which fail validation in v1.0 | `[ ] PENDING` | _Not created yet_ |
-| 29 | `ISSUE-02-21` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][react] typescript/renderers/react/README.md omits required MarkdownContext.Provider setup and makes outdated v0.8 default export claim | `[ ] PENDING` | _Not created yet_ |
-| 30 | `ISSUE-02-22` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0][evolution_guide] specification/v1_0/docs/evolution_guide.md omits breaking removal of h1–h5 from Text.variant | `[ ] PENDING` | _Not created yet_ |
-| 31 | `ISSUE-02-23` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0][web_core] Undocumented Catalog(id, protocolVersion, components, functions) parameter order and dual @path/path & @call/call schema support | `[ ] PENDING` | _Not created yet_ |
-| 32 | `ISSUE-03-01` | `Documentation Gap` | Macros | [Docs][v1.0] Complete absence of UI Macros (MacroExpander, @macro, slot boundaries, ID stitching) on a2ui.org and in specification/v1_0 | `[ ] PENDING` | _Not created yet_ |
-| 33 | `ISSUE-03-02` | `Documentation Gap` | Macros | [Docs][v1.0] Macro README and conformance/agent/macros/macros.yaml exclusively use legacy v0.9 syntax ({"path": ...}, variant: "h3", v0_9 builder) | `[ ] PENDING` | _Not created yet_ |
-| 34 | `ISSUE-03-03` | `Documentation Gap` | Macros | [Docs][Macros] Mismatch between declarative YAML macro templates ($param, $spreadParam) in conformance/agent/macros/ and imperative Python @macro API | `[ ] PENDING` | _Not created yet_ |
-| 35 | `ISSUE-03-04` | `Bug` | Macros | [v1.0][TypeScript] MacroExpander, MacroProcessor, and IdAllocator are completely unimplemented in @a2ui/agent and @a2ui/web_core (macros.yaml skipped) | `[ ] PENDING` | _Not created yet_ |
-| 36 | `ISSUE-03-05` | `Bug` | Macros | [v1.0][Python a2ui_agent] MacroProcessor and MacroExpander hardcode v0_9 builders/versions and fail to coerce A2UI v1.0 {"@path": "/..."} data bindings | `[ ] PENDING` | _Not created yet_ |
-| 37 | `ISSUE-03-06` | `Bug` | Macros | [Python a2ui_agent] MacroExpander._expand_component_list swallows non-recursion macro exceptions, leaving unexpanded macro nodes that fail schema validation downstream | `[ ] PENDING` | _Not created yet_ |
-| 38 | `ISSUE-04-01` | `Documentation Gap` | Skill Generation | [v1.0][docs] Document Agent Skill Generation (SkillGenerator, Skill, SkillSet, and SKILL.md compilation) in public guides and @a2ui/agent README | `[ ] PENDING` | _Not created yet_ |
-| 39 | `ISSUE-04-02` | `Documentation Gap` | Skill Generation | [v1.0][docs] Document programmatic @a2ui/web_core Catalog.toJson() schema serialization and InMemoryCatalogProvider usage in @a2ui/agent | `[ ] PENDING` | _Not created yet_ |
-| 40 | `ISSUE-04-03` | `Documentation Gap` | Skill Generation | [v1.0][docs] Document .agents/AGENTS.md and .agents/skills/ workspace layout conventions for A2UI skill packages | `[ ] PENDING` | _Not created yet_ |
-| 41 | `ISSUE-04-04` | `Bug` | Skill Generation | [v1.0][agent] @a2ui/agent TypeScript SDK is missing Skill, SkillSet, and SkillGenerator (all conformance/agent/skill.yaml cases skipped) | `[ ] PENDING` | _Not created yet_ |
-| 42 | `ISSUE-04-05` | `Bug` | Skill Generation | [v1.0][conformance] Contradiction between conformance/test_data/skills/express_base_rules.txt (root = Card(...)) and catalog_transformer.yaml pruning conformance | `[ ] PENDING` | _Not created yet_ |
-| 43 | `ISSUE-04-06` | `Bug` | Skill Generation | [v1.0][web_core] @a2ui/web_core/catalogs/basic/v1 fails to export BASIC_COMPONENTS and BASIC_CATALOG_DOCUMENT_OPTIONS | `[ ] PENDING` | _Not created yet_ |
-| 44 | `ISSUE-04-07` | `Bug` | Skill Generation | [v1.0][skill] Heading mismatch (### Examples: vs ## Examples) in SkillGenerator and zero direct_json test cases in conformance/agent/skill.yaml | `[ ] PENDING` | _Not created yet_ |
-| 45 | `ISSUE-04-08` | `Bug` | Skill Generation | [v1.0][skill] _clean_catalog_name(catalog) in python/a2ui_agent/src/a2ui/skill/skill.py ignores catalog.id and fails on URLs ending in /catalog.json without a vN segment | `[ ] PENDING` | _Not created yet_ |
-| 46 | `ISSUE-05-01` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core] PayloadValidator.validateComponent strips 'metadata' before validating metadata.extensions | `[ ] PENDING` | _Not created yet_ |
-| 47 | `ISSUE-05-02` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core] Published @a2ui/web_core@0.14.0 v1_0 ExtensionsSchema accepts non-UAX #31 '-' and ':' characters in extension keys | `[ ] PENDING` | _Not created yet_ |
-| 48 | `ISSUE-05-03` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core] SurfaceModel.dispatchAction silently drops metadata.extensions on outbound actions | `[ ] PENDING` | _Not created yet_ |
-| 49 | `ISSUE-05-04` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core][react] ComponentNode and useNodeView omit component metadata.extensions from resolved nodes and toJSON() | `[ ] PENDING` | _Not created yet_ |
-| 50 | `ISSUE-05-05` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs] Document A2UI v1.0 Protocol Extensions (metadata.extensions) on createSurface, ComponentCommon, ComponentDefinition, and action | `[ ] PENDING` | _Not created yet_ |
-| 51 | `ISSUE-05-06` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs] Document UAX #31 identifier syntax requirement for metadata.extensions keys (no dots, hyphens, or colons) | `[ ] PENDING` | _Not created yet_ |
-| 52 | `ISSUE-05-07` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs] Provide migration example for replacing v0.9 createSurface.theme with v1.0 createSurface.metadata.extensions | `[ ] PENDING` | _Not created yet_ |
-| 53 | `ISSUE-05-08` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs][react] Document how custom components in @a2ui/react and @a2ui/web_core access surface and component metadata.extensions | `[ ] PENDING` | _Not created yet_ |
-| 54 | `ISSUE-06-01` | `Documentation Gap` | Express DSL | [v1.0][docs] A2UI Express has no guide or reference page on a2ui.org (docs/public/) and the glossary links to the wrong GitHub org (a2ui-project/a2ui) | `[ ] PENDING` | _Not created yet_ |
-| 55 | `ISSUE-06-02` | `Documentation Gap` | Express DSL | [v1.0][agent] Published @a2ui/agent@0.0.1 on npm defaults to DirectJsonFormatFactory and is missing APIs documented in typescript/agents/a2ui_agent/README.md | `[ ] PENDING` | _Not created yet_ |
-| 56 | `ISSUE-06-03` | `Documentation Gap` | Express DSL | [v1.0][spec] Contradictions between a2ui_express.md specification and Express.g4 grammar (UAX #31 identifiers, surfaceParams, statement separators) | `[ ] PENDING` | _Not created yet_ |
-| 57 | `ISSUE-06-04` | `Documentation Gap` | Express DSL | [v1.0][spec][agent] a2ui_express.md advertises line-by-line progressive streaming, but ExpressFormat.supportsStreaming is hardcoded to false | `[ ] PENDING` | _Not created yet_ |
-| 58 | `ISSUE-06-05` | `Bug` | Express DSL | [v1.0][agent] ExpressDecompiler throws ExpressInvalidIdentifierError on hyphenated component IDs instead of emitting id="..." per spec | `[ ] PENDING` | _Not created yet_ |
-| 59 | `ISSUE-06-06` | `Bug` | Express DSL | [v1.0][agent] ExpressParser configures BlockLexer with single-quote (') strings and omits // and /* */ comments, swallowing </a2ui> when a comment contains an apostrophe | `[ ] PENDING` | _Not created yet_ |
-| 60 | `ISSUE-06-07` | `Bug` | Express DSL | [v1.0][agent] ExpressCompiler.compile() uses naive substring .includes('<a2ui>') / .split('</a2ui>') stripping that corrupts string literals containing <a2ui> | `[ ] PENDING` | _Not created yet_ |
-| 61 | `ISSUE-06-08` | `Bug` | Express DSL | [v1.0][agent] @a2ui/agent top-level 'import * as fs from "fs"' breaks browser/on-device bundling and ExpressCompiler is missing from src/index.ts exports | `[ ] PENDING` | _Not created yet_ |
-| 62 | `ISSUE-07-01` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] Declarative @call functions in UI bindings, checks, and action.functionCall never route to RpcHandler.callAgentFunction | `[ ] PENDING` | _Not created yet_ |
-| 63 | `ISSUE-07-02` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] createCatalogInvoker never checks allowedCallers === 'agentOnly', allowing UI bindings and actions to execute agent-only functions | `[ ] PENDING` | _Not created yet_ |
-| 64 | `ISSUE-07-03` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] DataContext does not handle Promise return values from async FunctionImplementation.execute | `[ ] PENDING` | _Not created yet_ |
-| 65 | `ISSUE-07-04` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] ErrorMessageSchema in src/v1_0/schema/renderer-to-agent.ts uses !z.any().safeParse(value).success and rejects 100% of error messages | `[ ] PENDING` | _Not created yet_ |
-| 66 | `ISSUE-07-05` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] MessageProcessor and RpcHandler use legacy v0.9 'call' key instead of v1.0 '@call' in function RPC payloads | `[ ] PENDING` | _Not created yet_ |
-| 67 | `ISSUE-07-06` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core][react] @a2ui/web_core root entrypoint omits ./v1_0 and ./rpc, and @a2ui/react@0.14.0 has no v1.0 or RpcHandler integration | `[ ] PENDING` | _Not created yet_ |
-| 68 | `ISSUE-07-07` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/reference/messages.md has no v1.0 tab and omits callRendererFunction, agentFunctionResponse, callAgentFunction, and rendererFunctionResponse | `[ ] PENDING` | _Not created yet_ |
-| 69 | `ISSUE-07-08` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/concepts/actions.md uses legacy v0.9 call/path syntax and contradicts v1.0 callAgentFunction / callRendererFunction RPC | `[ ] PENDING` | _Not created yet_ |
-| 70 | `ISSUE-07-09` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/concepts/data-binding.md mislabels v0.9 {"path": "..."} as "v0.9 and later" and omits v1.0 @path, @call, and @index | `[ ] PENDING` | _Not created yet_ |
-| 71 | `ISSUE-07-10` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/concepts/catalogs.md documents v0.9 array-based functions schema instead of v1.0 map-based functions with allowedCallers | `[ ] PENDING` | _Not created yet_ |
-| 72 | `ISSUE-07-11` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][spec/docs] a2ui_custom_functions.md is unlinked from docs/public/ and its getScreenResolution example omits allowedCallers, failing with INVALID_FUNCTION_CALL | `[ ] PENDING` | _Not created yet_ |
-| 73 | `ISSUE-07-12` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][spec/docs] a2ui_protocol.md Introduction states there are 4 agent-to-renderer messages instead of 6 | `[ ] PENDING` | _Not created yet_ |
-| 74 | `ISSUE-07-13` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/guides/renderer-development.md v1.0 tab references non-existent surfaceProperties and a2uiClientCapabilities and omits agentFunctionResponse | `[ ] PENDING` | _Not created yet_ |
-| 75 | `ISSUE-08-01` | `Documentation Gap` | Accessibility | [docs][v1.0] reference/components.md documents invalid 'accessibility.role' property and omits 'description', 'live', and 'hidden' | `[ ] PENDING` | _Not created yet_ |
-| 76 | `ISSUE-08-02` | `Documentation Gap` | Accessibility | [docs][v1.0] docs/public/roadmap.md lists Accessibility & ARIA attribute generation as future work despite shipping in v1.0 | `[ ] PENDING` | _Not created yet_ |
-| 77 | `ISSUE-08-03` | `Documentation Gap` | Accessibility | [docs][v1.0] Missing public documentation for AccessibilityAttributes ('live' regions, 'hidden' subtrees, and semantic label inference) | `[ ] PENDING` | _Not created yet_ |
-| 78 | `ISSUE-08-04` | `Bug` | Accessibility | [v1.0][web_core] BasicCatalogA2uiLitElement sets ARIA attributes on outer custom element host instead of inner focusable control | `[ ] PENDING` | _Not created yet_ |
-| 79 | `ISSUE-08-05` | `Bug` | Accessibility | [v1.0][web_core][react] Public A2uiLitElement and @a2ui/react adapters do not plumb ComponentCommon.accessibility attributes | `[ ] PENDING` | _Not created yet_ |
-| 80 | `ISSUE-08-06` | `Bug` | Accessibility | [v1.0][web_core] accessibility.hidden=true sets aria-hidden="true" without inert, violating axe-core aria-hidden-focus | `[ ] PENDING` | _Not created yet_ |
-| 81 | `ISSUE-08-07` | `Bug` | Accessibility | [v1.0][web_core] BasicCatalogA2uiLitElement only sets 'aria-description' without 'aria-describedby' fallback required by a2ui_protocol.md | `[ ] PENDING` | _Not created yet_ |
-| 82 | `ISSUE-08-08` | `Bug` | Accessibility | [v1.0][web_core] Conformance test runner skips 'accessibility.yaml' and leaves validateAccessibilityCheckTestCase() unimplemented | `[ ] PENDING` | _Not created yet_ |
-| 83 | `ISSUE-09-01` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Public catalog guides still state surfaces are locked to a single catalog for their lifetime | `[ ] PENDING` | _Not created yet_ |
-| 84 | `ISSUE-09-02` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] concepts/catalogs.md instructs developers to clone all BASIC_COMPONENTS into custom catalogs instead of using v1.0 multi-catalog composition | `[ ] PENDING` | _Not created yet_ |
-| 85 | `ISSUE-09-03` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Undocumented non-inheritance rule for nested @call expressions inside components with an explicit catalogId | `[ ] PENDING` | _Not created yet_ |
-| 86 | `ISSUE-09-04` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Undocumented ChildSchema / ChildListSchema (markChildRef) requirement for custom container components | `[ ] PENDING` | _Not created yet_ |
-| 87 | `ISSUE-09-05` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Undocumented catalog reset on incremental updateComponents when catalogId is omitted in v1.0 | `[ ] PENDING` | _Not created yet_ |
-| 88 | `ISSUE-09-06` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Missing React implementation guide for registering and mixing multiple Catalog instances | `[ ] PENDING` | _Not created yet_ |
-| 89 | `ISSUE-09-07` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] generateValidationSchema localizes #/$defs/anyFunction to a single catalog, rejecting cross-catalog @calls and all @calls in component-only catalogs | `[ ] PENDING` | _Not created yet_ |
-| 90 | `ISSUE-09-08` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] MessageProcessor defaults validationConfig to undefined (allowUnknownElements = true), silently binding unknown components to defaultCatalog | `[ ] PENDING` | _Not created yet_ |
-| 91 | `ISSUE-09-09` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] ComponentModel.componentTree strips catalogId, losing per-component catalog overrides upon serialization | `[ ] PENDING` | _Not created yet_ |
-| 92 | `ISSUE-09-10` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] SurfaceModel.dispatchAction checks unreachable action.catalogId rejected by strict ActionSchema and omits source component catalogId | `[ ] PENDING` | _Not created yet_ |
-| 93 | `ISSUE-09-11` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] serializeComponentModel emits inner unevaluatedProperties: false in Catalog.toJson(), breaking Catalog.fromJson() round-trips for ComponentCommon fields | `[ ] PENDING` | _Not created yet_ |
-| 94 | `ISSUE-09-12` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] Component composition constraint validation (allowedParents / allowedChildren) ignores catalogId namespaces | `[ ] PENDING` | _Not created yet_ |
-| 95 | `ISSUE-09-13` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] RpcHandler.resolveFunctionImplementation ignores surface.defaultCatalog when catalogId is omitted and defaults allowedCallers to rendererOnly | `[ ] PENDING` | _Not created yet_ |
-| 96 | `ISSUE-09-14` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][react] @a2ui/react prepareCatalogs mutates shared Catalog.components Map in-place and Catalog.componentRefMap hardcodes V09_CHILD_REF_OPTIONS | `[ ] PENDING` | _Not created yet_ |
-| 97 | `ISSUE-10-01` | `Documentation Gap` | Streaming in Direct JSON / Transports | [Docs][Transports] docs/public/concepts/transports.md contains placeholder '// TODO: Add an example' blocks for HTTP/REST, WebSockets, and Server-Sent Events (SSE) | `[ ] PENDING` | _Not created yet_ |
-| 98 | `ISSUE-10-02` | `Documentation Gap` | Streaming in Direct JSON / Core Protocol Docs | [Docs][v1.0] docs/public/concepts/data-flow.md and docs/public/reference/messages.md omit A2UI v1.0, inline createSurface.components/dataModel, required updateDataModel.value, and @path/@call | `[ ] PENDING` | _Not created yet_ |
-| 99 | `ISSUE-10-03` | `Documentation Gap` | Streaming in Direct JSON / Agent Development | [Docs][Agent Guide] docs/public/guides/agent-development.md only covers v0.8/v0.9, references non-existent 'render'/'update' schema operations, and ends with an unfinished TODO | `[ ] PENDING` | _Not created yet_ |
-| 100 | `ISSUE-10-04` | `Documentation Gap` | Streaming in Direct JSON / Specification Schema | [v1.0][Spec] specification/v1_0/json/agent_to_renderer.json CreateSurfaceMessage description contradicts v1.0 inline components and dataModel support | `[ ] PENDING` | _Not created yet_ |
-| 101 | `ISSUE-10-05` | `Bug` | Streaming in Direct JSON | [v1.0][agent] DirectJsonResponseStream cannot progressively stream v1.0 single-message createSurface with inline components and dataModel | `[ ] PENDING` | _Not created yet_ |
-| 102 | `ISSUE-10-06` | `Bug` | Streaming in Direct JSON | [v1.0][web_core] MessageProcessor with STRICT_VALIDATION throws A2uiIntegrityError (Dangling reference) on top-down streaming recommended by DirectJsonFormat | `[ ] PENDING` | _Not created yet_ |
-| 103 | `ISSUE-10-07` | `Bug` | Streaming in Direct JSON / MessageProcessor Validation | [v1.0][web_core] MessageProcessor constructor silently ignores STRICT_VALIDATION / RELAXED_VALIDATION when passed directly as the 3rd argument instead of { validationConfig } | `[ ] PENDING` | _Not created yet_ |
-| 104 | `ISSUE-10-08` | `Bug` | Streaming in Direct JSON | [v1.0][agent] DirectJsonResponseStream sets wholeItemKeys: ['components'] in v1.0, disabling progressiveKeys: ['text'] streaming inside updateComponents | `[ ] PENDING` | _Not created yet_ |
+| 1 | `ISSUE-01-01` | `Bug` | Web Components & Universal Elements (@a2ui/react) | [v1.0][react] Importing @a2ui/react in Node.js / SSR crashes with ReferenceError: HTMLElement is not defined in ReactWcHost | `[x] CREATED` | [#3420](https://github.com/google/A2UI/issues/3420) |
+| 2 | `ISSUE-01-02` | `Bug` | Web Components & Universal Elements (@a2ui/web_core) | [v1.0][web_core] A2uiLitElement.adoptLightDomStyles() unconditionally leaks Shadow DOM styles into document.adoptedStyleSheets | `[x] CREATED` | [#3422](https://github.com/google/A2UI/issues/3422) |
+| 3 | `ISSUE-01-03` | `Bug` | Web Components & Universal Elements (@a2ui/react) | [v1.0][react] @a2ui/react@0.14.0 hardcodes @a2ui/web_core/v0_9 imports and lacks a ./v1_0 export subpath | `[x] CREATED` | [#3423](https://github.com/google/A2UI/issues/3423) |
+| 4 | `ISSUE-01-04` | `Bug` | Web Components & Universal Elements (@a2ui/web_core) | [v1.0][web_core] toWebComponentImplementation is omitted from @a2ui/web_core/universal barrel export | `[x] CREATED` | [#3424](https://github.com/google/A2UI/issues/3424) |
+| 5 | `ISSUE-01-05` | `Bug` | Web Components & Universal Elements (@a2ui/react) | [v1.0][react] toWebComponent() computeTagName leaks <a2ui-react-name-N> custom element registrations across HMR and unmemoized catalogs | `[x] CREATED` | [#3425](https://github.com/google/A2UI/issues/3425) |
+| 6 | `ISSUE-01-06` | `Documentation Gap` | Web Components & Universal Elements (Documentation) | [v1.0][docs] authoring-universal-components.md exclusively documents v0.9 imports and legacy {"path": "..."} bindings with zero v1.0 examples | `[x] CREATED` | [#3426](https://github.com/google/A2UI/issues/3426) |
+| 7 | `ISSUE-01-07` | `Documentation Gap` | Web Components & Universal Elements (Documentation) | [v1.0][docs] toWebComponentImplementation(element, api) and TaggedCustomElementConstructor are undocumented in authoring-universal-components.md | `[x] CREATED` | [#3427](https://github.com/google/A2UI/issues/3427) |
+| 8 | `ISSUE-01-08` | `Documentation Gap` | Web Components & Universal Elements (Documentation / JSDoc) | [v1.0][docs][web_core] Contradictory documentation between A2uiLitElement JSDoc and authoring-universal-components.md on Light DOM vs Shadow DOM default | `[x] CREATED` | [#3428](https://github.com/google/A2UI/issues/3428) |
+| 9 | `ISSUE-01-09` | `Documentation Gap` | Web Components & Universal Elements (@a2ui/react Documentation) | [v1.0][docs][react] Undocumented <a2ui-react-*> ReactWcHost wrapper elements and display: contents DOM structure in @a2ui/react | `[x] CREATED` | [#3429](https://github.com/google/A2UI/issues/3429) |
+| 10 | `ISSUE-02-01` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][catalog-mcp] @a2ui/catalog-mcp@0.0.1-alpha.1 ships v0.9 catalog.json and omits v1.0 McpApp component & sandbox.html | `[x] CREATED` | [#3430](https://github.com/google/A2UI/issues/3430) |
+| 11 | `ISSUE-02-02` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Security][mcp-apps] Community Lit MCP App sample passes allow-same-origin to inner sandbox iframe, defeating double-iframe isolation | `[x] CREATED` | [#3431](https://github.com/google/A2UI/issues/3431) |
+| 12 | `ISSUE-02-03` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][sandbox] typescript/catalogs/shared/sandbox/sandbox.ts only filters allow-same-origin and fails to strip allow-top-navigation and allow-popups | `[x] CREATED` | [#3432](https://github.com/google/A2UI/issues/3432) |
+| 13 | `ISSUE-02-04` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][catalog-mcp] catalogs/mcp/v1/catalog.json omits 'height' property on McpApp despite SandboxedFrameElement reading frameHeightFromProp | `[x] CREATED` | [#3433](https://github.com/google/A2UI/issues/3433) |
+| 14 | `ISSUE-02-05` | `Bug` | MCP Component & Iframe (@a2ui/catalog-mcp) | [v1.0][catalog-mcp] callMcpTool.ts hardcodes version: 'v0.9' in ensureMessageVersion and ignores v1.0 targetDataPath | `[x] CREATED` | [#3434](https://github.com/google/A2UI/issues/3434) |
+| 15 | `ISSUE-02-06` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][catalog-mcp] catalogs/mcp/README.md does not document v0.9-only status or missing McpApp component in @a2ui/catalog-mcp | `[x] CREATED` | [#3435](https://github.com/google/A2UI/issues/3435) |
+| 16 | `ISSUE-02-07` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][mcp-apps] docs/public/guides/mcp-apps-in-a2ui.md uses legacy v0.8/v0.9 "type": "custom" schema instead of v1.0 "component": "McpApp" | `[x] CREATED` | [#3436](https://github.com/google/A2UI/issues/3436) |
+| 17 | `ISSUE-02-08` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][mcp-apps] Broken relative link to mcp-apps-component.ts in docs/public/guides/mcp-apps-in-a2ui.md | `[x] CREATED` | [#3437](https://github.com/google/A2UI/issues/3437) |
+| 18 | `ISSUE-02-09` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][v1.0][mcp] Undocumented 'url_encoded:' prefix convention for McpApp.htmlContent in catalogs/mcp/v1/mcp_app_specification.md | `[x] CREATED` | [#3438](https://github.com/google/A2UI/issues/3438) |
+| 19 | `ISSUE-02-10` | `Documentation Gap` | MCP Component & Iframe (@a2ui/catalog-mcp) | [Docs][react][mcp] Missing React integration guide and /a2ui-sandbox/sandbox.html hosting instructions for McpApp | `[x] CREATED` | [#3439](https://github.com/google/A2UI/issues/3439) |
+| 20 | `ISSUE-02-12` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] PayloadValidator.validateComponent enforces UAX #31 on component instance 'id', rejecting hyphenated IDs used in the v1.0 spec | `[x] CREATED` | [#3440](https://github.com/google/A2UI/issues/3440) |
+| 21 | `ISSUE-02-13` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] A2uiBasicTextElement throws EventTarget.dispatchEvent TypeError in JSDOM when consuming @lit/context | `[x] CREATED` | [#3441](https://github.com/google/A2UI/issues/3441) |
+| 22 | `ISSUE-02-14` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Packaging][web_core] @a2ui/web_core@0.14.0 npm tarball ships .tsbuildinfo (182 KB) and compiled *.test.js / *.test.d.ts files | `[x] CREATED` | [#3442](https://github.com/google/A2UI/issues/3442) |
+| 23 | `ISSUE-02-15` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] MessageProcessor options.version defaults to 'v0.9' even when initialized exclusively with v1.0 catalogs | `[x] CREATED` | [#3443](https://github.com/google/A2UI/issues/3443) |
+| 24 | `ISSUE-02-16` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] V1Point0Adapter reads createSurface.theme, but CreateSurfaceMessageSchema rejects 'theme' due to .strict() | `[x] CREATED` | [#3444](https://github.com/google/A2UI/issues/3444) |
+| 25 | `ISSUE-02-17` | `Bug` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [v1.0][web_core] PayloadValidator.stripEnvelopeKeys deletes 'id' before running componentApi.schema, breaking custom schemas extending ComponentCommonSchema | `[x] CREATED` | [#3445](https://github.com/google/A2UI/issues/3445) |
+| 26 | `ISSUE-02-18` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0][react] Public docs list React v1.0 support as '🚧 Planned' and omit a React v1.0 quickstart despite @a2ui/web_core@0.14.0 shipping './v1_0' | `[x] CREATED` | [#3446](https://github.com/google/A2UI/issues/3446) |
+| 27 | `ISSUE-02-19` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][react] docs/public/guides/client-setup.md references nonexistent <A2UISurface> and useA2UI() hook and has no React code example | `[x] CREATED` | [#3447](https://github.com/google/A2UI/issues/3447) |
+| 28 | `ISSUE-02-20` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0] 'v0.9 and later' tabs in public docs teach {"path": "..."}, {"call": "..."}, and Text variant "h1" which fail validation in v1.0 | `[x] CREATED` | [#3448](https://github.com/google/A2UI/issues/3448) |
+| 29 | `ISSUE-02-21` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][react] typescript/renderers/react/README.md omits required MarkdownContext.Provider setup and makes outdated v0.8 default export claim | `[x] CREATED` | [#3449](https://github.com/google/A2UI/issues/3449) |
+| 30 | `ISSUE-02-22` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0][evolution_guide] specification/v1_0/docs/evolution_guide.md omits breaking removal of h1–h5 from Text.variant | `[x] CREATED` | [#3450](https://github.com/google/A2UI/issues/3450) |
+| 31 | `ISSUE-02-23` | `Documentation Gap` | Core React Onboarding (@a2ui/react & @a2ui/web_core) | [Docs][v1.0][web_core] Undocumented Catalog(id, protocolVersion, components, functions) parameter order and dual @path/path & @call/call schema support | `[x] CREATED` | [#3451](https://github.com/google/A2UI/issues/3451) |
+| 32 | `ISSUE-03-01` | `Documentation Gap` | Macros | [Docs][v1.0] Complete absence of UI Macros (MacroExpander, @macro, slot boundaries, ID stitching) on a2ui.org and in specification/v1_0 | `[x] CREATED` | [#3452](https://github.com/google/A2UI/issues/3452) |
+| 33 | `ISSUE-03-02` | `Documentation Gap` | Macros | [Docs][v1.0] Macro README and conformance/agent/macros/macros.yaml exclusively use legacy v0.9 syntax ({"path": ...}, variant: "h3", v0_9 builder) | `[x] CREATED` | [#3453](https://github.com/google/A2UI/issues/3453) |
+| 34 | `ISSUE-03-03` | `Documentation Gap` | Macros | [Docs][Macros] Mismatch between declarative YAML macro templates ($param, $spreadParam) in conformance/agent/macros/ and imperative Python @macro API | `[x] CREATED` | [#3454](https://github.com/google/A2UI/issues/3454) |
+| 35 | `ISSUE-03-04` | `Bug` | Macros | [v1.0][TypeScript] MacroExpander, MacroProcessor, and IdAllocator are completely unimplemented in @a2ui/agent and @a2ui/web_core (macros.yaml skipped) | `[x] CREATED` | [#3455](https://github.com/google/A2UI/issues/3455) |
+| 36 | `ISSUE-03-05` | `Bug` | Macros | [v1.0][Python a2ui_agent] MacroProcessor and MacroExpander hardcode v0_9 builders/versions and fail to coerce A2UI v1.0 {"@path": "/..."} data bindings | `[x] CREATED` | [#3456](https://github.com/google/A2UI/issues/3456) |
+| 37 | `ISSUE-03-06` | `Bug` | Macros | [Python a2ui_agent] MacroExpander._expand_component_list swallows non-recursion macro exceptions, leaving unexpanded macro nodes that fail schema validation downstream | `[x] CREATED` | [#3457](https://github.com/google/A2UI/issues/3457) |
+| 38 | `ISSUE-04-01` | `Documentation Gap` | Skill Generation | [v1.0][docs] Document Agent Skill Generation (SkillGenerator, Skill, SkillSet, and SKILL.md compilation) in public guides and @a2ui/agent README | `[x] CREATED` | [#3458](https://github.com/google/A2UI/issues/3458) |
+| 39 | `ISSUE-04-02` | `Documentation Gap` | Skill Generation | [v1.0][docs] Document programmatic @a2ui/web_core Catalog.toJson() schema serialization and InMemoryCatalogProvider usage in @a2ui/agent | `[x] CREATED` | [#3459](https://github.com/google/A2UI/issues/3459) |
+| 40 | `ISSUE-04-03` | `Documentation Gap` | Skill Generation | [v1.0][docs] Document .agents/AGENTS.md and .agents/skills/ workspace layout conventions for A2UI skill packages | `[x] CREATED` | [#3460](https://github.com/google/A2UI/issues/3460) |
+| 41 | `ISSUE-04-04` | `Bug` | Skill Generation | [v1.0][agent] @a2ui/agent TypeScript SDK is missing Skill, SkillSet, and SkillGenerator (all conformance/agent/skill.yaml cases skipped) | `[x] CREATED` | [#3461](https://github.com/google/A2UI/issues/3461) |
+| 42 | `ISSUE-04-05` | `Bug` | Skill Generation | [v1.0][conformance] Contradiction between conformance/test_data/skills/express_base_rules.txt (root = Card(...)) and catalog_transformer.yaml pruning conformance | `[x] CREATED` | [#3462](https://github.com/google/A2UI/issues/3462) |
+| 43 | `ISSUE-04-06` | `Bug` | Skill Generation | [v1.0][web_core] @a2ui/web_core/catalogs/basic/v1 fails to export BASIC_COMPONENTS and BASIC_CATALOG_DOCUMENT_OPTIONS | `[x] CREATED` | [#3463](https://github.com/google/A2UI/issues/3463) |
+| 44 | `ISSUE-04-07` | `Bug` | Skill Generation | [v1.0][skill] Heading mismatch (### Examples: vs ## Examples) in SkillGenerator and zero direct_json test cases in conformance/agent/skill.yaml | `[x] CREATED` | [#3464](https://github.com/google/A2UI/issues/3464) |
+| 45 | `ISSUE-04-08` | `Bug` | Skill Generation | [v1.0][skill] _clean_catalog_name(catalog) in python/a2ui_agent/src/a2ui/skill/skill.py ignores catalog.id and fails on URLs ending in /catalog.json without a vN segment | `[x] CREATED` | [#3465](https://github.com/google/A2UI/issues/3465) |
+| 46 | `ISSUE-05-01` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core] PayloadValidator.validateComponent strips 'metadata' before validating metadata.extensions | `[x] CREATED` | [#3466](https://github.com/google/A2UI/issues/3466) |
+| 47 | `ISSUE-05-02` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core] Published @a2ui/web_core@0.14.0 v1_0 ExtensionsSchema accepts non-UAX #31 '-' and ':' characters in extension keys | `[x] CREATED` | [#3467](https://github.com/google/A2UI/issues/3467) |
+| 48 | `ISSUE-05-03` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core] SurfaceModel.dispatchAction silently drops metadata.extensions on outbound actions | `[x] CREATED` | [#3468](https://github.com/google/A2UI/issues/3468) |
+| 49 | `ISSUE-05-04` | `Bug` | Protocol Extensions (metadata.extensions) | [v1.0][web_core][react] ComponentNode and useNodeView omit component metadata.extensions from resolved nodes and toJSON() | `[x] CREATED` | [#3469](https://github.com/google/A2UI/issues/3469) |
+| 50 | `ISSUE-05-05` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs] Document A2UI v1.0 Protocol Extensions (metadata.extensions) on createSurface, ComponentCommon, ComponentDefinition, and action | `[x] CREATED` | [#3470](https://github.com/google/A2UI/issues/3470) |
+| 51 | `ISSUE-05-06` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs] Document UAX #31 identifier syntax requirement for metadata.extensions keys (no dots, hyphens, or colons) | `[x] CREATED` | [#3471](https://github.com/google/A2UI/issues/3471) |
+| 52 | `ISSUE-05-07` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs] Provide migration example for replacing v0.9 createSurface.theme with v1.0 createSurface.metadata.extensions | `[x] CREATED` | [#3472](https://github.com/google/A2UI/issues/3472) |
+| 53 | `ISSUE-05-08` | `Documentation Gap` | Protocol Extensions (metadata.extensions) | [v1.0][docs][react] Document how custom components in @a2ui/react and @a2ui/web_core access surface and component metadata.extensions | `[x] CREATED` | [#3473](https://github.com/google/A2UI/issues/3473) |
+| 54 | `ISSUE-06-01` | `Documentation Gap` | Express DSL | [v1.0][docs] A2UI Express has no guide or reference page on a2ui.org (docs/public/) and the glossary links to the wrong GitHub org (a2ui-project/a2ui) | `[x] CREATED` | [#3474](https://github.com/google/A2UI/issues/3474) |
+| 55 | `ISSUE-06-02` | `Documentation Gap` | Express DSL | [v1.0][agent] Published @a2ui/agent@0.0.1 on npm defaults to DirectJsonFormatFactory and is missing APIs documented in typescript/agents/a2ui_agent/README.md | `[x] CREATED` | [#3475](https://github.com/google/A2UI/issues/3475) |
+| 56 | `ISSUE-06-03` | `Documentation Gap` | Express DSL | [v1.0][spec] Contradictions between a2ui_express.md specification and Express.g4 grammar (UAX #31 identifiers, surfaceParams, statement separators) | `[x] CREATED` | [#3476](https://github.com/google/A2UI/issues/3476) |
+| 57 | `ISSUE-06-04` | `Documentation Gap` | Express DSL | [v1.0][spec][agent] a2ui_express.md advertises line-by-line progressive streaming, but ExpressFormat.supportsStreaming is hardcoded to false | `[x] CREATED` | [#3477](https://github.com/google/A2UI/issues/3477) |
+| 58 | `ISSUE-06-05` | `Bug` | Express DSL | [v1.0][agent] ExpressDecompiler throws ExpressInvalidIdentifierError on hyphenated component IDs instead of emitting id="..." per spec | `[x] CREATED` | [#3478](https://github.com/google/A2UI/issues/3478) |
+| 59 | `ISSUE-06-06` | `Bug` | Express DSL | [v1.0][agent] ExpressParser configures BlockLexer with single-quote (') strings and omits // and /* */ comments, swallowing </a2ui> when a comment contains an apostrophe | `[x] CREATED` | [#3479](https://github.com/google/A2UI/issues/3479) |
+| 60 | `ISSUE-06-07` | `Bug` | Express DSL | [v1.0][agent] ExpressCompiler.compile() uses naive substring .includes('<a2ui>') / .split('</a2ui>') stripping that corrupts string literals containing <a2ui> | `[x] CREATED` | [#3480](https://github.com/google/A2UI/issues/3480) |
+| 61 | `ISSUE-06-08` | `Bug` | Express DSL | [v1.0][agent] @a2ui/agent top-level 'import * as fs from "fs"' breaks browser/on-device bundling and ExpressCompiler is missing from src/index.ts exports | `[x] CREATED` | [#3481](https://github.com/google/A2UI/issues/3481) |
+| 62 | `ISSUE-07-01` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] Declarative @call functions in UI bindings, checks, and action.functionCall never route to RpcHandler.callAgentFunction | `[x] CREATED` | [#3482](https://github.com/google/A2UI/issues/3482) |
+| 63 | `ISSUE-07-02` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] createCatalogInvoker never checks allowedCallers === 'agentOnly', allowing UI bindings and actions to execute agent-only functions | `[x] CREATED` | [#3483](https://github.com/google/A2UI/issues/3483) |
+| 64 | `ISSUE-07-03` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] DataContext does not handle Promise return values from async FunctionImplementation.execute | `[x] CREATED` | [#3484](https://github.com/google/A2UI/issues/3484) |
+| 65 | `ISSUE-07-04` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] ErrorMessageSchema in src/v1_0/schema/renderer-to-agent.ts uses !z.any().safeParse(value).success and rejects 100% of error messages | `[x] CREATED` | [#3485](https://github.com/google/A2UI/issues/3485) |
+| 66 | `ISSUE-07-05` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core] MessageProcessor and RpcHandler use legacy v0.9 'call' key instead of v1.0 '@call' in function RPC payloads | `[x] CREATED` | [#3486](https://github.com/google/A2UI/issues/3486) |
+| 67 | `ISSUE-07-06` | `Bug` | Server-Side & Client-Side Functions | [v1.0][web_core][react] @a2ui/web_core root entrypoint omits ./v1_0 and ./rpc, and @a2ui/react@0.14.0 has no v1.0 or RpcHandler integration | `[x] CREATED` | [#3487](https://github.com/google/A2UI/issues/3487) |
+| 68 | `ISSUE-07-07` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/reference/messages.md has no v1.0 tab and omits callRendererFunction, agentFunctionResponse, callAgentFunction, and rendererFunctionResponse | `[x] CREATED` | [#3488](https://github.com/google/A2UI/issues/3488) |
+| 69 | `ISSUE-07-08` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/concepts/actions.md uses legacy v0.9 call/path syntax and contradicts v1.0 callAgentFunction / callRendererFunction RPC | `[x] CREATED` | [#3489](https://github.com/google/A2UI/issues/3489) |
+| 70 | `ISSUE-07-09` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/concepts/data-binding.md mislabels v0.9 {"path": "..."} as "v0.9 and later" and omits v1.0 @path, @call, and @index | `[x] CREATED` | [#3490](https://github.com/google/A2UI/issues/3490) |
+| 71 | `ISSUE-07-10` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/concepts/catalogs.md documents v0.9 array-based functions schema instead of v1.0 map-based functions with allowedCallers | `[x] CREATED` | [#3491](https://github.com/google/A2UI/issues/3491) |
+| 72 | `ISSUE-07-11` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][spec/docs] a2ui_custom_functions.md is unlinked from docs/public/ and its getScreenResolution example omits allowedCallers, failing with INVALID_FUNCTION_CALL | `[x] CREATED` | [#3492](https://github.com/google/A2UI/issues/3492) |
+| 73 | `ISSUE-07-12` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][spec/docs] a2ui_protocol.md Introduction states there are 4 agent-to-renderer messages instead of 6 | `[x] CREATED` | [#3493](https://github.com/google/A2UI/issues/3493) |
+| 74 | `ISSUE-07-13` | `Documentation Gap` | Server-Side & Client-Side Functions | [v1.0][docs] docs/public/guides/renderer-development.md v1.0 tab references non-existent surfaceProperties and a2uiClientCapabilities and omits agentFunctionResponse | `[x] CREATED` | [#3494](https://github.com/google/A2UI/issues/3494) |
+| 75 | `ISSUE-08-01` | `Documentation Gap` | Accessibility | [docs][v1.0] reference/components.md documents invalid 'accessibility.role' property and omits 'description', 'live', and 'hidden' | `[x] CREATED` | [#3495](https://github.com/google/A2UI/issues/3495) |
+| 76 | `ISSUE-08-02` | `Documentation Gap` | Accessibility | [docs][v1.0] docs/public/roadmap.md lists Accessibility & ARIA attribute generation as future work despite shipping in v1.0 | `[x] CREATED` | [#3496](https://github.com/google/A2UI/issues/3496) |
+| 77 | `ISSUE-08-03` | `Documentation Gap` | Accessibility | [docs][v1.0] Missing public documentation for AccessibilityAttributes ('live' regions, 'hidden' subtrees, and semantic label inference) | `[x] CREATED` | [#3497](https://github.com/google/A2UI/issues/3497) |
+| 78 | `ISSUE-08-04` | `Bug` | Accessibility | [v1.0][web_core] BasicCatalogA2uiLitElement sets ARIA attributes on outer custom element host instead of inner focusable control | `[x] CREATED` | [#3498](https://github.com/google/A2UI/issues/3498) |
+| 79 | `ISSUE-08-05` | `Bug` | Accessibility | [v1.0][web_core][react] Public A2uiLitElement and @a2ui/react adapters do not plumb ComponentCommon.accessibility attributes | `[x] CREATED` | [#3499](https://github.com/google/A2UI/issues/3499) |
+| 80 | `ISSUE-08-06` | `Bug` | Accessibility | [v1.0][web_core] accessibility.hidden=true sets aria-hidden="true" without inert, violating axe-core aria-hidden-focus | `[x] CREATED` | [#3500](https://github.com/google/A2UI/issues/3500) |
+| 81 | `ISSUE-08-07` | `Bug` | Accessibility | [v1.0][web_core] BasicCatalogA2uiLitElement only sets 'aria-description' without 'aria-describedby' fallback required by a2ui_protocol.md | `[x] CREATED` | [#3501](https://github.com/google/A2UI/issues/3501) |
+| 82 | `ISSUE-08-08` | `Bug` | Accessibility | [v1.0][web_core] Conformance test runner skips 'accessibility.yaml' and leaves validateAccessibilityCheckTestCase() unimplemented | `[x] CREATED` | [#3502](https://github.com/google/A2UI/issues/3502) |
+| 83 | `ISSUE-09-01` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Public catalog guides still state surfaces are locked to a single catalog for their lifetime | `[x] CREATED` | [#3503](https://github.com/google/A2UI/issues/3503) |
+| 84 | `ISSUE-09-02` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] concepts/catalogs.md instructs developers to clone all BASIC_COMPONENTS into custom catalogs instead of using v1.0 multi-catalog composition | `[x] CREATED` | [#3504](https://github.com/google/A2UI/issues/3504) |
+| 85 | `ISSUE-09-03` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Undocumented non-inheritance rule for nested @call expressions inside components with an explicit catalogId | `[x] CREATED` | [#3505](https://github.com/google/A2UI/issues/3505) |
+| 86 | `ISSUE-09-04` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Undocumented ChildSchema / ChildListSchema (markChildRef) requirement for custom container components | `[x] CREATED` | [#3506](https://github.com/google/A2UI/issues/3506) |
+| 87 | `ISSUE-09-05` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Undocumented catalog reset on incremental updateComponents when catalogId is omitted in v1.0 | `[x] CREATED` | [#3507](https://github.com/google/A2UI/issues/3507) |
+| 88 | `ISSUE-09-06` | `Documentation Gap` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][docs] Missing React implementation guide for registering and mixing multiple Catalog instances | `[x] CREATED` | [#3508](https://github.com/google/A2UI/issues/3508) |
+| 89 | `ISSUE-09-07` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] generateValidationSchema localizes #/$defs/anyFunction to a single catalog, rejecting cross-catalog @calls and all @calls in component-only catalogs | `[x] CREATED` | [#3509](https://github.com/google/A2UI/issues/3509) |
+| 90 | `ISSUE-09-08` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] MessageProcessor defaults validationConfig to undefined (allowUnknownElements = true), silently binding unknown components to defaultCatalog | `[x] CREATED` | [#3510](https://github.com/google/A2UI/issues/3510) |
+| 91 | `ISSUE-09-09` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] ComponentModel.componentTree strips catalogId, losing per-component catalog overrides upon serialization | `[x] CREATED` | [#3511](https://github.com/google/A2UI/issues/3511) |
+| 92 | `ISSUE-09-10` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] SurfaceModel.dispatchAction checks unreachable action.catalogId rejected by strict ActionSchema and omits source component catalogId | `[x] CREATED` | [#3512](https://github.com/google/A2UI/issues/3512) |
+| 93 | `ISSUE-09-11` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] serializeComponentModel emits inner unevaluatedProperties: false in Catalog.toJson(), breaking Catalog.fromJson() round-trips for ComponentCommon fields | `[x] CREATED` | [#3513](https://github.com/google/A2UI/issues/3513) |
+| 94 | `ISSUE-09-12` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] Component composition constraint validation (allowedParents / allowedChildren) ignores catalogId namespaces | `[x] CREATED` | [#3514](https://github.com/google/A2UI/issues/3514) |
+| 95 | `ISSUE-09-13` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][web_core] RpcHandler.resolveFunctionImplementation ignores surface.defaultCatalog when catalogId is omitted and defaults allowedCallers to rendererOnly | `[x] CREATED` | [#3515](https://github.com/google/A2UI/issues/3515) |
+| 96 | `ISSUE-09-14` | `Bug` | Mixed Catalogs (Multi-Catalog Surfaces) | [v1.0][react] @a2ui/react prepareCatalogs mutates shared Catalog.components Map in-place and Catalog.componentRefMap hardcodes V09_CHILD_REF_OPTIONS | `[x] CREATED` | [#3516](https://github.com/google/A2UI/issues/3516) |
+| 97 | `ISSUE-10-01` | `Documentation Gap` | Streaming in Direct JSON / Transports | [Docs][Transports] docs/public/concepts/transports.md contains placeholder '// TODO: Add an example' blocks for HTTP/REST, WebSockets, and Server-Sent Events (SSE) | `[x] CREATED` | [#3517](https://github.com/google/A2UI/issues/3517) |
+| 98 | `ISSUE-10-02` | `Documentation Gap` | Streaming in Direct JSON / Core Protocol Docs | [Docs][v1.0] docs/public/concepts/data-flow.md and docs/public/reference/messages.md omit A2UI v1.0, inline createSurface.components/dataModel, required updateDataModel.value, and @path/@call | `[x] CREATED` | [#3518](https://github.com/google/A2UI/issues/3518) |
+| 99 | `ISSUE-10-03` | `Documentation Gap` | Streaming in Direct JSON / Agent Development | [Docs][Agent Guide] docs/public/guides/agent-development.md only covers v0.8/v0.9, references non-existent 'render'/'update' schema operations, and ends with an unfinished TODO | `[x] CREATED` | [#3519](https://github.com/google/A2UI/issues/3519) |
+| 100 | `ISSUE-10-04` | `Documentation Gap` | Streaming in Direct JSON / Specification Schema | [v1.0][Spec] specification/v1_0/json/agent_to_renderer.json CreateSurfaceMessage description contradicts v1.0 inline components and dataModel support | `[x] CREATED` | [#3520](https://github.com/google/A2UI/issues/3520) |
+| 101 | `ISSUE-10-05` | `Bug` | Streaming in Direct JSON | [v1.0][agent] DirectJsonResponseStream cannot progressively stream v1.0 single-message createSurface with inline components and dataModel | `[x] CREATED` | [#3521](https://github.com/google/A2UI/issues/3521) |
+| 102 | `ISSUE-10-06` | `Bug` | Streaming in Direct JSON | [v1.0][web_core] MessageProcessor with STRICT_VALIDATION throws A2uiIntegrityError (Dangling reference) on top-down streaming recommended by DirectJsonFormat | `[x] CREATED` | [#3522](https://github.com/google/A2UI/issues/3522) |
+| 103 | `ISSUE-10-07` | `Bug` | Streaming in Direct JSON / MessageProcessor Validation | [v1.0][web_core] MessageProcessor constructor silently ignores STRICT_VALIDATION / RELAXED_VALIDATION when passed directly as the 3rd argument instead of { validationConfig } | `[x] CREATED` | [#3523](https://github.com/google/A2UI/issues/3523) |
+| 104 | `ISSUE-10-08` | `Bug` | Streaming in Direct JSON | [v1.0][agent] DirectJsonResponseStream sets wholeItemKeys: ['components'] in v1.0, disabling progressiveKeys: ['text'] streaming inside updateComponents | `[x] CREATED` | [#3524](https://github.com/google/A2UI/issues/3524) |
 
 ---
 
 ## [ISSUE-01-01] [v1.0][react] Importing @a2ui/react in Node.js / SSR crashes with ReferenceError: HTMLElement is not defined in ReactWcHost
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3420](https://github.com/google/A2UI/issues/3420)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Web Components & Universal Elements (@a2ui/react)`
@@ -187,8 +187,8 @@ And in `registerUniversalElement` (`typescript/core/web_core/src/universal/regis
 ---
 
 ## [ISSUE-01-02] [v1.0][web_core] A2uiLitElement.adoptLightDomStyles() unconditionally leaks Shadow DOM styles into document.adoptedStyleSheets
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3422](https://github.com/google/A2UI/issues/3422)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Web Components & Universal Elements (@a2ui/web_core)`
@@ -267,8 +267,8 @@ In `typescript/core/web_core/src/universal/a2ui-lit-element.ts`:
 ---
 
 ## [ISSUE-01-03] [v1.0][react] @a2ui/react@0.14.0 hardcodes @a2ui/web_core/v0_9 imports and lacks a ./v1_0 export subpath
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3423](https://github.com/google/A2UI/issues/3423)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Web Components & Universal Elements (@a2ui/react)`
@@ -353,8 +353,8 @@ Add `src/v1_0/index.ts` (`export * from '../index.js';`) and the `"./v1_0"` entr
 ---
 
 ## [ISSUE-01-04] [v1.0][web_core] toWebComponentImplementation is omitted from @a2ui/web_core/universal barrel export
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3424](https://github.com/google/A2UI/issues/3424)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Web Components & Universal Elements (@a2ui/web_core)`
@@ -417,8 +417,8 @@ export {
 ---
 
 ## [ISSUE-01-05] [v1.0][react] toWebComponent() computeTagName leaks <a2ui-react-name-N> custom element registrations across HMR and unmemoized catalogs
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3425](https://github.com/google/A2UI/issues/3425)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Web Components & Universal Elements (@a2ui/react)`
@@ -486,8 +486,8 @@ Since `ReactWcHost` is stateless and reads `this.node` at runtime, cache the hos
 ---
 
 ## [ISSUE-01-06] [v1.0][docs] authoring-universal-components.md exclusively documents v0.9 imports and legacy {"path": "..."} bindings with zero v1.0 examples
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3426](https://github.com/google/A2UI/issues/3426)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Web Components & Universal Elements (Documentation)`
@@ -549,8 +549,8 @@ Update `docs/public/guides/authoring-universal-components.md` to use `@a2ui/web_
 ---
 
 ## [ISSUE-01-07] [v1.0][docs] toWebComponentImplementation(element, api) and TaggedCustomElementConstructor are undocumented in authoring-universal-components.md
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3427](https://github.com/google/A2UI/issues/3427)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Web Components & Universal Elements (Documentation)`
@@ -601,8 +601,8 @@ Add a section to `docs/public/guides/authoring-universal-components.md` (and exp
 ---
 
 ## [ISSUE-01-08] [v1.0][docs][web_core] Contradictory documentation between A2uiLitElement JSDoc and authoring-universal-components.md on Light DOM vs Shadow DOM default
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3428](https://github.com/google/A2UI/issues/3428)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Web Components & Universal Elements (Documentation / JSDoc)`
@@ -660,8 +660,8 @@ Update the JSDoc comments in `typescript/core/web_core/src/universal/a2ui-lit-el
 ---
 
 ## [ISSUE-01-09] [v1.0][docs][react] Undocumented <a2ui-react-*> ReactWcHost wrapper elements and display: contents DOM structure in @a2ui/react
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3429](https://github.com/google/A2UI/issues/3429)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Web Components & Universal Elements (@a2ui/react Documentation)`
@@ -713,8 +713,8 @@ Add a callout in `docs/public/guides/authoring-universal-components.md` under th
 ---
 
 ## [ISSUE-02-01] [v1.0][catalog-mcp] @a2ui/catalog-mcp@0.0.1-alpha.1 ships v0.9 catalog.json and omits v1.0 McpApp component & sandbox.html
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3430](https://github.com/google/A2UI/issues/3430)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -771,8 +771,8 @@ Installing `@a2ui/catalog-mcp` only provides v0.9 `createCallMcpToolFunction` an
 ---
 
 ## [ISSUE-02-02] [Security][mcp-apps] Community Lit MCP App sample passes allow-same-origin to inner sandbox iframe, defeating double-iframe isolation
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3431](https://github.com/google/A2UI/issues/3431)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -826,8 +826,8 @@ Remove `allow-same-origin` and `allow-popups` from `mcp-apps-component.ts:194` a
 ---
 
 ## [ISSUE-02-03] [v1.0][sandbox] typescript/catalogs/shared/sandbox/sandbox.ts only filters allow-same-origin and fails to strip allow-top-navigation and allow-popups
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3432](https://github.com/google/A2UI/issues/3432)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -872,8 +872,8 @@ Filter `payload.sandbox` against an explicit `ALLOWED_INNER_SANDBOX_FLAGS = new 
 ---
 
 ## [ISSUE-02-04] [v1.0][catalog-mcp] catalogs/mcp/v1/catalog.json omits 'height' property on McpApp despite SandboxedFrameElement reading frameHeightFromProp
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3433](https://github.com/google/A2UI/issues/3433)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -920,8 +920,8 @@ Add `"height"` (`{ "type": ["number", "string"], "description": "Optional initia
 ---
 
 ## [ISSUE-02-05] [v1.0][catalog-mcp] callMcpTool.ts hardcodes version: 'v0.9' in ensureMessageVersion and ignores v1.0 targetDataPath
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3434](https://github.com/google/A2UI/issues/3434)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -979,8 +979,8 @@ Add `targetDataPath: z.string().optional()` to `CallMcpToolArgsSchema`, write st
 ---
 
 ## [ISSUE-02-06] [Docs][catalog-mcp] catalogs/mcp/README.md does not document v0.9-only status or missing McpApp component in @a2ui/catalog-mcp
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3435](https://github.com/google/A2UI/issues/3435)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -1013,8 +1013,8 @@ Update `catalogs/mcp/README.md` with a version support table (`v0.9` vs `v1.0`) 
 ---
 
 ## [ISSUE-02-07] [Docs][mcp-apps] docs/public/guides/mcp-apps-in-a2ui.md uses legacy v0.8/v0.9 "type": "custom" schema instead of v1.0 "component": "McpApp"
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3436](https://github.com/google/A2UI/issues/3436)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -1069,8 +1069,8 @@ Update `docs/public/guides/mcp-apps-in-a2ui.md` lines 71–95 to match `catalogs
 ---
 
 ## [ISSUE-02-08] [Docs][mcp-apps] Broken relative link to mcp-apps-component.ts in docs/public/guides/mcp-apps-in-a2ui.md
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3437](https://github.com/google/A2UI/issues/3437)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -1105,8 +1105,8 @@ Update the relative link on line 138 of `docs/public/guides/mcp-apps-in-a2ui.md`
 ---
 
 ## [ISSUE-02-09] [Docs][v1.0][mcp] Undocumented 'url_encoded:' prefix convention for McpApp.htmlContent in catalogs/mcp/v1/mcp_app_specification.md
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3438](https://github.com/google/A2UI/issues/3438)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -1160,8 +1160,8 @@ Document the `url_encoded:` prefix contract in both `catalogs/mcp/v1/catalog.jso
 ---
 
 ## [ISSUE-02-10] [Docs][react][mcp] Missing React integration guide and /a2ui-sandbox/sandbox.html hosting instructions for McpApp
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3439](https://github.com/google/A2UI/issues/3439)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `MCP Component & Iframe (@a2ui/catalog-mcp)`
@@ -1200,8 +1200,8 @@ Add a "Hosting the Sandbox Proxy (`/a2ui-sandbox/sandbox.html`)" section and a R
 ---
 
 ## [ISSUE-02-12] [v1.0][web_core] PayloadValidator.validateComponent enforces UAX #31 on component instance 'id', rejecting hyphenated IDs used in the v1.0 spec
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3440](https://github.com/google/A2UI/issues/3440)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1262,8 +1262,8 @@ Align `PayloadValidator.validateComponent` (`payload-validator.ts:186`) and `spe
 ---
 
 ## [ISSUE-02-13] [v1.0][web_core] A2uiBasicTextElement throws EventTarget.dispatchEvent TypeError in JSDOM when consuming @lit/context
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3441](https://github.com/google/A2UI/issues/3441)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1301,8 +1301,8 @@ Document the required JSDOM globals (`globalThis.Event = window.Event; globalThi
 ---
 
 ## [ISSUE-02-14] [Packaging][web_core] @a2ui/web_core@0.14.0 npm tarball ships .tsbuildinfo (182 KB) and compiled *.test.js / *.test.d.ts files
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3442](https://github.com/google/A2UI/issues/3442)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1336,8 +1336,8 @@ Add a `.npmignore` (or `files` filter / build cleanup step in `scripts/prepare-p
 ---
 
 ## [ISSUE-02-15] [v1.0][web_core] MessageProcessor options.version defaults to 'v0.9' even when initialized exclusively with v1.0 catalogs
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3443](https://github.com/google/A2UI/issues/3443)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1378,8 +1378,8 @@ In `MessageProcessor` constructor (`message-processor.ts:172`), infer the defaul
 ---
 
 ## [ISSUE-02-16] [v1.0][web_core] V1Point0Adapter reads createSurface.theme, but CreateSurfaceMessageSchema rejects 'theme' due to .strict()
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3444](https://github.com/google/A2UI/issues/3444)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1497,8 +1497,8 @@ Remove `theme: cs?.theme` from `typescript/core/web_core/src/processing/adapters
 ---
 
 ## [ISSUE-02-17] [v1.0][web_core] PayloadValidator.stripEnvelopeKeys deletes 'id' before running componentApi.schema, breaking custom schemas extending ComponentCommonSchema
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3445](https://github.com/google/A2UI/issues/3445)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1559,8 +1559,8 @@ In `PayloadValidator.validateComponent` (`payload-validator.ts:198`), only strip
 ---
 
 ## [ISSUE-02-18] [Docs][v1.0][react] Public docs list React v1.0 support as '🚧 Planned' and omit a React v1.0 quickstart despite @a2ui/web_core@0.14.0 shipping './v1_0'
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3446](https://github.com/google/A2UI/issues/3446)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1597,8 +1597,8 @@ Update the renderer status matrices in `renderers.md` and `client-setup.md`, and
 ---
 
 ## [ISSUE-02-19] [Docs][react] docs/public/guides/client-setup.md references nonexistent <A2UISurface> and useA2UI() hook and has no React code example
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3447](https://github.com/google/A2UI/issues/3447)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1643,8 +1643,8 @@ Replace lines 121–134 of `docs/public/guides/client-setup.md` with accurate `@
 ---
 
 ## [ISSUE-02-20] [Docs][v1.0] 'v0.9 and later' tabs in public docs teach {"path": "..."}, {"call": "..."}, and Text variant "h1" which fail validation in v1.0
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3448](https://github.com/google/A2UI/issues/3448)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1684,8 +1684,8 @@ Split the `=== "v0.9 and later"` content tabs across `docs/public/concepts/` and
 ---
 
 ## [ISSUE-02-21] [Docs][react] typescript/renderers/react/README.md omits required MarkdownContext.Provider setup and makes outdated v0.8 default export claim
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3449](https://github.com/google/A2UI/issues/3449)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1721,8 +1721,8 @@ Update `typescript/renderers/react/README.md` lines 251–288 to wrap `<A2uiSurf
 ---
 
 ## [ISSUE-02-22] [Docs][v1.0][evolution_guide] specification/v1_0/docs/evolution_guide.md omits breaking removal of h1–h5 from Text.variant
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3450](https://github.com/google/A2UI/issues/3450)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1759,8 +1759,8 @@ Add a "`Text` Component (`variant` enum narrowed to `'body' | 'caption'`)" subse
 ---
 
 ## [ISSUE-02-23] [Docs][v1.0][web_core] Undocumented Catalog(id, protocolVersion, components, functions) parameter order and dual @path/path & @call/call schema support
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3451](https://github.com/google/A2UI/issues/3451)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Core React Onboarding (@a2ui/react & @a2ui/web_core)`
@@ -1809,8 +1809,8 @@ Replace the placeholder in `docs/public/guides/defining-your-own-catalog.md` wit
 ---
 
 ## [ISSUE-03-01] [Docs][v1.0] Complete absence of UI Macros (MacroExpander, @macro, slot boundaries, ID stitching) on a2ui.org and in specification/v1_0
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3452](https://github.com/google/A2UI/issues/3452)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Macros`
@@ -1860,8 +1860,8 @@ Developers reading `https://a2ui.org` or `specification/v1_0/` have no way to di
 ---
 
 ## [ISSUE-03-02] [Docs][v1.0] Macro README and conformance/agent/macros/macros.yaml exclusively use legacy v0.9 syntax ({"path": ...}, variant: "h3", v0_9 builder)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3453](https://github.com/google/A2UI/issues/3453)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Macros`
@@ -1940,8 +1940,8 @@ Update `python/a2ui_agent/src/a2ui/transformers/macros/README.md` and `conforman
 ---
 
 ## [ISSUE-03-03] [Docs][Macros] Mismatch between declarative YAML macro templates ($param, $spreadParam) in conformance/agent/macros/ and imperative Python @macro API
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3454](https://github.com/google/A2UI/issues/3454)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Macros`
@@ -2002,8 +2002,8 @@ Developers reading `conformance/agent/macros/` expect to be able to register JSO
 ---
 
 ## [ISSUE-03-04] [v1.0][TypeScript] MacroExpander, MacroProcessor, and IdAllocator are completely unimplemented in @a2ui/agent and @a2ui/web_core (macros.yaml skipped)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3455](https://github.com/google/A2UI/issues/3455)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Macros`
@@ -2051,8 +2051,8 @@ Port `MacroExpander`, `MacroProcessor`, `IdAllocator`, and `flattenComponentTree
 ---
 
 ## [ISSUE-03-05] [v1.0][Python a2ui_agent] MacroProcessor and MacroExpander hardcode v0_9 builders/versions and fail to coerce A2UI v1.0 {"@path": "/..."} data bindings
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3456](https://github.com/google/A2UI/issues/3456)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Macros`
@@ -2127,8 +2127,8 @@ In `python/a2ui_agent`, the macro transformer subsystem (`macro.py`, `processor.
 ---
 
 ## [ISSUE-03-06] [Python a2ui_agent] MacroExpander._expand_component_list swallows non-recursion macro exceptions, leaving unexpanded macro nodes that fail schema validation downstream
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3457](https://github.com/google/A2UI/issues/3457)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Macros`
@@ -2186,8 +2186,8 @@ Raise `A2uiValidationError` (with the macro name, instance ID, and original erro
 ---
 
 ## [ISSUE-04-01] [v1.0][docs] Document Agent Skill Generation (SkillGenerator, Skill, SkillSet, and SKILL.md compilation) in public guides and @a2ui/agent README
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3458](https://github.com/google/A2UI/issues/3458)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Skill Generation`
@@ -2229,8 +2229,8 @@ Add a dedicated **"Compiling Catalogs into Agent Skills (`SKILL.md`)"** section 
 ---
 
 ## [ISSUE-04-02] [v1.0][docs] Document programmatic @a2ui/web_core Catalog.toJson() schema serialization and InMemoryCatalogProvider usage in @a2ui/agent
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3459](https://github.com/google/A2UI/issues/3459)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Skill Generation`
@@ -2264,8 +2264,8 @@ Document `catalog.toJson()` and `InMemoryCatalogProvider` in `typescript/agents/
 ---
 
 ## [ISSUE-04-03] [v1.0][docs] Document .agents/AGENTS.md and .agents/skills/ workspace layout conventions for A2UI skill packages
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3460](https://github.com/google/A2UI/issues/3460)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Skill Generation`
@@ -2299,8 +2299,8 @@ Add the `.agents/skills/` directory layout diagram and frontmatter specification
 ---
 
 ## [ISSUE-04-04] [v1.0][agent] @a2ui/agent TypeScript SDK is missing Skill, SkillSet, and SkillGenerator (all conformance/agent/skill.yaml cases skipped)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3461](https://github.com/google/A2UI/issues/3461)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Skill Generation`
@@ -2353,8 +2353,8 @@ Add the `.agents/skills/` directory layout diagram and frontmatter specification
 ---
 
 ## [ISSUE-04-05] [v1.0][conformance] Contradiction between conformance/test_data/skills/express_base_rules.txt (root = Card(...)) and catalog_transformer.yaml pruning conformance
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3462](https://github.com/google/A2UI/issues/3462)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Skill Generation`
@@ -2398,8 +2398,8 @@ Update `EXPRESS_RULES` in `python/a2ui_agent/src/a2ui/inference_formats/express/
 ---
 
 ## [ISSUE-04-06] [v1.0][web_core] @a2ui/web_core/catalogs/basic/v1 fails to export BASIC_COMPONENTS and BASIC_CATALOG_DOCUMENT_OPTIONS
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3463](https://github.com/google/A2UI/issues/3463)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Skill Generation`
@@ -2440,8 +2440,8 @@ Re-export `BASIC_COMPONENTS` and `BASIC_CATALOG_DOCUMENT_OPTIONS` from `typescri
 ---
 
 ## [ISSUE-04-07] [v1.0][skill] Heading mismatch (### Examples: vs ## Examples) in SkillGenerator and zero direct_json test cases in conformance/agent/skill.yaml
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3464](https://github.com/google/A2UI/issues/3464)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Skill Generation`
@@ -2493,8 +2493,8 @@ Calling `SkillGenerator(express_format).generate_catalog_skill(catalog, include_
 ---
 
 ## [ISSUE-04-08] [v1.0][skill] _clean_catalog_name(catalog) in python/a2ui_agent/src/a2ui/skill/skill.py ignores catalog.id and fails on URLs ending in /catalog.json without a vN segment
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3465](https://github.com/google/A2UI/issues/3465)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Skill Generation`
@@ -2554,8 +2554,8 @@ Update `_clean_catalog_name` in `python/a2ui_agent/src/a2ui/skill/skill.py` to c
 ---
 
 ## [ISSUE-05-01] [v1.0][web_core] PayloadValidator.validateComponent strips 'metadata' before validating metadata.extensions
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3466](https://github.com/google/A2UI/issues/3466)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -2630,8 +2630,8 @@ Remove `'metadata'` from `COMPONENT_ENVELOPE_KEYS` in `typescript/core/web_core/
 ---
 
 ## [ISSUE-05-02] [v1.0][web_core] Published @a2ui/web_core@0.14.0 v1_0 ExtensionsSchema accepts non-UAX #31 '-' and ':' characters in extension keys
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3467](https://github.com/google/A2UI/issues/3467)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -2687,8 +2687,8 @@ Publish a new release of `@a2ui/web_core` (`0.14.1` / `0.15.0`) to npm containin
 ---
 
 ## [ISSUE-05-03] [v1.0][web_core] SurfaceModel.dispatchAction silently drops metadata.extensions on outbound actions
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3468](https://github.com/google/A2UI/issues/3468)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -2793,8 +2793,8 @@ if (rawMetadata && typeof rawMetadata === 'object' && !Array.isArray(rawMetadata
 ---
 
 ## [ISSUE-05-04] [v1.0][web_core][react] ComponentNode and useNodeView omit component metadata.extensions from resolved nodes and toJSON()
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3469](https://github.com/google/A2UI/issues/3469)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -2869,8 +2869,8 @@ Expose `readonly metadata?: Record<string, unknown>` on `ComponentNode` (backed 
 ---
 
 ## [ISSUE-05-05] [v1.0][docs] Document A2UI v1.0 Protocol Extensions (metadata.extensions) on createSurface, ComponentCommon, ComponentDefinition, and action
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3470](https://github.com/google/A2UI/issues/3470)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -2918,8 +2918,8 @@ Add a **"Protocol Extensions (`metadata.extensions`)"** section to `specificatio
 ---
 
 ## [ISSUE-05-06] [v1.0][docs] Document UAX #31 identifier syntax requirement for metadata.extensions keys (no dots, hyphens, or colons)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3471](https://github.com/google/A2UI/issues/3471)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -2971,8 +2971,8 @@ Update `specification/v1_0/docs/a2ui_protocol.md` under `createSurface`, `update
 ---
 
 ## [ISSUE-05-07] [v1.0][docs] Provide migration example for replacing v0.9 createSurface.theme with v1.0 createSurface.metadata.extensions
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3472](https://github.com/google/A2UI/issues/3472)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -3010,8 +3010,8 @@ Add a before/after JSON example to `specification/v1_0/docs/evolution_guide.md` 
 ---
 
 ## [ISSUE-05-08] [v1.0][docs][react] Document how custom components in @a2ui/react and @a2ui/web_core access surface and component metadata.extensions
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3473](https://github.com/google/A2UI/issues/3473)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Protocol Extensions (metadata.extensions)`
@@ -3051,8 +3051,8 @@ Document how to read surface-level and component-level `metadata.extensions` via
 ---
 
 ## [ISSUE-06-01] [v1.0][docs] A2UI Express has no guide or reference page on a2ui.org (docs/public/) and the glossary links to the wrong GitHub org (a2ui-project/a2ui)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3474](https://github.com/google/A2UI/issues/3474)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Express DSL`
@@ -3098,8 +3098,8 @@ External developers browsing `a2ui.org` (`docs/public/`) cannot find any syntax 
 ---
 
 ## [ISSUE-06-02] [v1.0][agent] Published @a2ui/agent@0.0.1 on npm defaults to DirectJsonFormatFactory and is missing APIs documented in typescript/agents/a2ui_agent/README.md
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3475](https://github.com/google/A2UI/issues/3475)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Express DSL`
@@ -3144,8 +3144,8 @@ Developers installing `@a2ui/agent@0.0.1` from npm encounter missing exports (`R
 ---
 
 ## [ISSUE-06-03] [v1.0][spec] Contradictions between a2ui_express.md specification and Express.g4 grammar (UAX #31 identifiers, surfaceParams, statement separators)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3476](https://github.com/google/A2UI/issues/3476)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Express DSL`
@@ -3195,8 +3195,8 @@ Multilingual variable names allowed by `a2ui_express.md` fail ANTLR lexing in `E
 ---
 
 ## [ISSUE-06-04] [v1.0][spec][agent] a2ui_express.md advertises line-by-line progressive streaming, but ExpressFormat.supportsStreaming is hardcoded to false
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3477](https://github.com/google/A2UI/issues/3477)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Express DSL`
@@ -3243,8 +3243,8 @@ Developers choosing A2UI Express based on the streaming pitch in `a2ui_express.m
 ---
 
 ## [ISSUE-06-05] [v1.0][agent] ExpressDecompiler throws ExpressInvalidIdentifierError on hyphenated component IDs instead of emitting id="..." per spec
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3478](https://github.com/google/A2UI/issues/3478)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Express DSL`
@@ -3311,8 +3311,8 @@ Port `_assign_variable_names()` from Python's `decompiler.py` to `typescript/age
 ---
 
 ## [ISSUE-06-06] [v1.0][agent] ExpressParser configures BlockLexer with single-quote (') strings and omits // and /* */ comments, swallowing </a2ui> when a comment contains an apostrophe
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3479](https://github.com/google/A2UI/issues/3479)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Express DSL`
@@ -3378,8 +3378,8 @@ Any apostrophe (`'`) inside a `//` or `/* ... */` comment (or inside a double-qu
 ---
 
 ## [ISSUE-06-07] [v1.0][agent] ExpressCompiler.compile() uses naive substring .includes('<a2ui>') / .split('</a2ui>') stripping that corrupts string literals containing <a2ui>
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3480](https://github.com/google/A2UI/issues/3480)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Express DSL`
@@ -3434,8 +3434,8 @@ In `typescript/agents/a2ui_agent/src/inference-formats/express/compiler.ts` (lin
 ---
 
 ## [ISSUE-06-08] [v1.0][agent] @a2ui/agent top-level 'import * as fs from "fs"' breaks browser/on-device bundling and ExpressCompiler is missing from src/index.ts exports
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3481](https://github.com/google/A2UI/issues/3481)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Express DSL`
@@ -3494,8 +3494,8 @@ However, `@a2ui/agent` has two packaging defects in `typescript/agents/a2ui_agen
 ---
 
 ## [ISSUE-07-01] [v1.0][web_core] Declarative @call functions in UI bindings, checks, and action.functionCall never route to RpcHandler.callAgentFunction
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3482](https://github.com/google/A2UI/issues/3482)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -3569,8 +3569,8 @@ In `@a2ui/web_core@0.14.0`, `DataContext`, `Catalog.invoker`, and `SurfaceModel.
 ---
 
 ## [ISSUE-07-02] [v1.0][web_core] createCatalogInvoker never checks allowedCallers === 'agentOnly', allowing UI bindings and actions to execute agent-only functions
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3483](https://github.com/google/A2UI/issues/3483)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -3639,8 +3639,8 @@ if (fn.allowedCallers === 'agentOnly') {
 ---
 
 ## [ISSUE-07-03] [v1.0][web_core] DataContext does not handle Promise return values from async FunctionImplementation.execute
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3484](https://github.com/google/A2UI/issues/3484)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -3695,8 +3695,8 @@ In `DataContext.resolveSignal()`, detect `res instanceof Promise` (or `typeof (r
 ---
 
 ## [ISSUE-07-04] [v1.0][web_core] ErrorMessageSchema in src/v1_0/schema/renderer-to-agent.ts uses !z.any().safeParse(value).success and rejects 100% of error messages
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3485](https://github.com/google/A2UI/issues/3485)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -3783,8 +3783,8 @@ z.object({ surfaceId: z.string(), functionCallId: z.undefined() }).passthrough()
 ---
 
 ## [ISSUE-07-05] [v1.0][web_core] MessageProcessor and RpcHandler use legacy v0.9 'call' key instead of v1.0 '@call' in function RPC payloads
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3486](https://github.com/google/A2UI/issues/3486)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -3864,8 +3864,8 @@ There are two `'@call'` vs `'call'` mismatches in `@a2ui/web_core@0.14.0`:
 ---
 
 ## [ISSUE-07-06] [v1.0][web_core][react] @a2ui/web_core root entrypoint omits ./v1_0 and ./rpc, and @a2ui/react@0.14.0 has no v1.0 or RpcHandler integration
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3487](https://github.com/google/A2UI/issues/3487)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -3910,8 +3910,8 @@ Developers importing from `@a2ui/web_core` or `@a2ui/react` cannot access v1.0 `
 ---
 
 ## [ISSUE-07-07] [v1.0][docs] docs/public/reference/messages.md has no v1.0 tab and omits callRendererFunction, agentFunctionResponse, callAgentFunction, and rendererFunctionResponse
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3488](https://github.com/google/A2UI/issues/3488)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -3964,8 +3964,8 @@ Add a `=== "v1.0 Message Types"` tab to `docs/public/reference/messages.md` with
 ---
 
 ## [ISSUE-07-08] [v1.0][docs] docs/public/concepts/actions.md uses legacy v0.9 call/path syntax and contradicts v1.0 callAgentFunction / callRendererFunction RPC
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3489](https://github.com/google/A2UI/issues/3489)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -4015,8 +4015,8 @@ Update `docs/public/concepts/actions.md` to add v1.0 examples with `"@call"` / `
 ---
 
 ## [ISSUE-07-09] [v1.0][docs] docs/public/concepts/data-binding.md mislabels v0.9 {"path": "..."} as "v0.9 and later" and omits v1.0 @path, @call, and @index
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3490](https://github.com/google/A2UI/issues/3490)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -4068,8 +4068,8 @@ Rename the existing tab to `=== "v0.9"` and add a new `=== "v1.0"` tab in `docs/
 ---
 
 ## [ISSUE-07-10] [v1.0][docs] docs/public/concepts/catalogs.md documents v0.9 array-based functions schema instead of v1.0 map-based functions with allowedCallers
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3491](https://github.com/google/A2UI/issues/3491)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -4119,8 +4119,8 @@ Update `docs/public/concepts/catalogs.md` with the v1.0 `catalog_definition.json
 ---
 
 ## [ISSUE-07-11] [v1.0][spec/docs] a2ui_custom_functions.md is unlinked from docs/public/ and its getScreenResolution example omits allowedCallers, failing with INVALID_FUNCTION_CALL
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3492](https://github.com/google/A2UI/issues/3492)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -4195,8 +4195,8 @@ Following the official specification examples verbatim causes `getScreenResoluti
 ---
 
 ## [ISSUE-07-12] [v1.0][spec/docs] a2ui_protocol.md Introduction states there are 4 agent-to-renderer messages instead of 6
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3493](https://github.com/google/A2UI/issues/3493)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -4235,8 +4235,8 @@ Update lines 24–29 of `specification/v1_0/docs/a2ui_protocol.md` to list all s
 ---
 
 ## [ISSUE-07-13] [v1.0][docs] docs/public/guides/renderer-development.md v1.0 tab references non-existent surfaceProperties and a2uiClientCapabilities and omits agentFunctionResponse
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3494](https://github.com/google/A2UI/issues/3494)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Server-Side & Client-Side Functions`
@@ -4287,8 +4287,8 @@ Update `docs/public/guides/renderer-development.md` lines 25–43 and 134–158 
 ---
 
 ## [ISSUE-08-01] [docs][v1.0] reference/components.md documents invalid 'accessibility.role' property and omits 'description', 'live', and 'hidden'
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3495](https://github.com/google/A2UI/issues/3495)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Accessibility`
@@ -4370,8 +4370,8 @@ Update `docs/public/reference/components.md` (line 608) to remove `role` and lis
 ---
 
 ## [ISSUE-08-02] [docs][v1.0] docs/public/roadmap.md lists Accessibility & ARIA attribute generation as future work despite shipping in v1.0
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3496](https://github.com/google/A2UI/issues/3496)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Accessibility`
@@ -4416,8 +4416,8 @@ Update `docs/public/roadmap.md` (lines 133–141) to move v1.0 `AccessibilityAtt
 ---
 
 ## [ISSUE-08-03] [docs][v1.0] Missing public documentation for AccessibilityAttributes ('live' regions, 'hidden' subtrees, and semantic label inference)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3497](https://github.com/google/A2UI/issues/3497)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Accessibility`
@@ -4457,8 +4457,8 @@ Add an Accessibility section to `docs/public/reference/components.md` (and/or a 
 ---
 
 ## [ISSUE-08-04] [v1.0][web_core] BasicCatalogA2uiLitElement sets ARIA attributes on outer custom element host instead of inner focusable control
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3498](https://github.com/google/A2UI/issues/3498)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Accessibility`
@@ -4527,8 +4527,8 @@ Per `conformance/core/accessibility.yaml` (`test_accessibility_attributes_plumbi
 ---
 
 ## [ISSUE-08-05] [v1.0][web_core][react] Public A2uiLitElement and @a2ui/react adapters do not plumb ComponentCommon.accessibility attributes
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3499](https://github.com/google/A2UI/issues/3499)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Accessibility`
@@ -4576,8 +4576,8 @@ Move `applyAccessibilityAttributes()` (and `weight` flex handling) from `BasicCa
 ---
 
 ## [ISSUE-08-06] [v1.0][web_core] accessibility.hidden=true sets aria-hidden="true" without inert, violating axe-core aria-hidden-focus
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3500](https://github.com/google/A2UI/issues/3500)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Accessibility`
@@ -4660,8 +4660,8 @@ if (a11y?.hidden === true) {
 ---
 
 ## [ISSUE-08-07] [v1.0][web_core] BasicCatalogA2uiLitElement only sets 'aria-description' without 'aria-describedby' fallback required by a2ui_protocol.md
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3501](https://github.com/google/A2UI/issues/3501)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Accessibility`
@@ -4700,8 +4700,8 @@ When `accessibility.description` is non-empty, render a visually-hidden `<span i
 ---
 
 ## [ISSUE-08-08] [v1.0][web_core] Conformance test runner skips 'accessibility.yaml' and leaves validateAccessibilityCheckTestCase() unimplemented
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3502](https://github.com/google/A2UI/issues/3502)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Accessibility`
@@ -4744,8 +4744,8 @@ Implement `validateAccessibilityCheckTestCase()` against the rendered DOM tree (
 ---
 
 ## [ISSUE-09-01] [v1.0][docs] Public catalog guides still state surfaces are locked to a single catalog for their lifetime
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3503](https://github.com/google/A2UI/issues/3503)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -4788,8 +4788,8 @@ Update `docs/public/concepts/catalogs.md` (section "Catalog Negotiation & Surfac
 ---
 
 ## [ISSUE-09-02] [v1.0][docs] concepts/catalogs.md instructs developers to clone all BASIC_COMPONENTS into custom catalogs instead of using v1.0 multi-catalog composition
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3504](https://github.com/google/A2UI/issues/3504)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -4833,8 +4833,8 @@ Update `docs/public/concepts/catalogs.md` to distinguish between:
 ---
 
 ## [ISSUE-09-03] [v1.0][docs] Undocumented non-inheritance rule for nested @call expressions inside components with an explicit catalogId
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3505](https://github.com/google/A2UI/issues/3505)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -4898,8 +4898,8 @@ Document the exact 3-step catalog resolution rule for both components and nested
 ---
 
 ## [ISSUE-09-04] [v1.0][docs] Undocumented ChildSchema / ChildListSchema (markChildRef) requirement for custom container components
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3506](https://github.com/google/A2UI/issues/3506)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -4952,8 +4952,8 @@ Add a "Defining Custom Container Components (`ChildSchema` & `ChildListSchema`)"
 ---
 
 ## [ISSUE-09-05] [v1.0][docs] Undocumented catalog reset on incremental updateComponents when catalogId is omitted in v1.0
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3507](https://github.com/google/A2UI/issues/3507)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5015,8 +5015,8 @@ Add a callout in `specification/v1_0/docs/a2ui_protocol.md` under "Support for M
 ---
 
 ## [ISSUE-09-06] [v1.0][docs] Missing React implementation guide for registering and mixing multiple Catalog instances
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3508](https://github.com/google/A2UI/issues/3508)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5052,8 +5052,8 @@ Replace the placeholder in `docs/public/guides/defining-your-own-catalog.md` wit
 ---
 
 ## [ISSUE-09-07] [v1.0][web_core] generateValidationSchema localizes #/$defs/anyFunction to a single catalog, rejecting cross-catalog @calls and all @calls in component-only catalogs
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3509](https://github.com/google/A2UI/issues/3509)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5136,8 +5136,8 @@ console.log(JSON.stringify(dealCatalog.validationSchema.$defs.anyFunction));
 ---
 
 ## [ISSUE-09-08] [v1.0][web_core] MessageProcessor defaults validationConfig to undefined (allowUnknownElements = true), silently binding unknown components to defaultCatalog
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3510](https://github.com/google/A2UI/issues/3510)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5229,8 +5229,8 @@ Default `allowUnknownElements` to `false` for v1.0 surfaces (or set `this.valida
 ---
 
 ## [ISSUE-09-09] [v1.0][web_core] ComponentModel.componentTree strips catalogId, losing per-component catalog overrides upon serialization
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3511](https://github.com/google/A2UI/issues/3511)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5298,8 +5298,8 @@ Update `ComponentModel.componentTree` in `typescript/core/web_core/src/state/com
 ---
 
 ## [ISSUE-09-10] [v1.0][web_core] SurfaceModel.dispatchAction checks unreachable action.catalogId rejected by strict ActionSchema and omits source component catalogId
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3512](https://github.com/google/A2UI/issues/3512)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5363,8 +5363,8 @@ However:
 ---
 
 ## [ISSUE-09-11] [v1.0][web_core] serializeComponentModel emits inner unevaluatedProperties: false in Catalog.toJson(), breaking Catalog.fromJson() round-trips for ComponentCommon fields
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3513](https://github.com/google/A2UI/issues/3513)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5461,8 +5461,8 @@ In `typescript/core/web_core/src/catalog/schema_serializer.ts` (`serializeCompon
 ---
 
 ## [ISSUE-09-12] [v1.0][web_core] Component composition constraint validation (allowedParents / allowedChildren) ignores catalogId namespaces
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3514](https://github.com/google/A2UI/issues/3514)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5519,8 +5519,8 @@ Pass `compCatalogMap` into `validateParentConstraints` and `validateChildConstra
 ---
 
 ## [ISSUE-09-13] [v1.0][web_core] RpcHandler.resolveFunctionImplementation ignores surface.defaultCatalog when catalogId is omitted and defaults allowedCallers to rendererOnly
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3515](https://github.com/google/A2UI/issues/3515)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5588,8 +5588,8 @@ In `typescript/core/web_core/src/rpc/rpc-handler.ts` (lines 415–418), fall bac
 ---
 
 ## [ISSUE-09-14] [v1.0][react] @a2ui/react prepareCatalogs mutates shared Catalog.components Map in-place and Catalog.componentRefMap hardcodes V09_CHILD_REF_OPTIONS
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3516](https://github.com/google/A2UI/issues/3516)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Mixed Catalogs (Multi-Catalog Surfaces)`
@@ -5651,8 +5651,8 @@ Two closely related catalog-handling bugs affect `@a2ui/react@0.14.0` and `@a2ui
 ---
 
 ## [ISSUE-10-01] [Docs][Transports] docs/public/concepts/transports.md contains placeholder '// TODO: Add an example' blocks for HTTP/REST, WebSockets, and Server-Sent Events (SSE)
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3517](https://github.com/google/A2UI/issues/3517)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Streaming in Direct JSON / Transports`
@@ -5709,8 +5709,8 @@ Replace the `// TODO: Add an example` blocks in `docs/public/concepts/transports
 ---
 
 ## [ISSUE-10-02] [Docs][v1.0] docs/public/concepts/data-flow.md and docs/public/reference/messages.md omit A2UI v1.0, inline createSurface.components/dataModel, required updateDataModel.value, and @path/@call
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3518](https://github.com/google/A2UI/issues/3518)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Streaming in Direct JSON / Core Protocol Docs`
@@ -5751,8 +5751,8 @@ Add `=== "v1.0"` tabs to `docs/public/concepts/data-flow.md` and `docs/public/re
 ---
 
 ## [ISSUE-10-03] [Docs][Agent Guide] docs/public/guides/agent-development.md only covers v0.8/v0.9, references non-existent 'render'/'update' schema operations, and ends with an unfinished TODO
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3519](https://github.com/google/A2UI/issues/3519)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Streaming in Direct JSON / Agent Development`
@@ -5808,8 +5808,8 @@ Update `docs/public/guides/agent-development.md` lines 131–182 to use v1.0, li
 ---
 
 ## [ISSUE-10-04] [v1.0][Spec] specification/v1_0/json/agent_to_renderer.json CreateSurfaceMessage description contradicts v1.0 inline components and dataModel support
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3520](https://github.com/google/A2UI/issues/3520)
 - **Label**: `v1-bug-bash`
 - **Type**: `Documentation Gap`
 - **Feature Area**: `Streaming in Direct JSON / Specification Schema`
@@ -5864,8 +5864,8 @@ Update the final sentence of `CreateSurfaceMessage.properties.createSurface.desc
 ---
 
 ## [ISSUE-10-05] [v1.0][agent] DirectJsonResponseStream cannot progressively stream v1.0 single-message createSurface with inline components and dataModel
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3521](https://github.com/google/A2UI/issues/3521)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Streaming in Direct JSON`
@@ -5920,8 +5920,8 @@ In `DirectJsonResponseStream`, when an unclosed `createSurface` envelope is grow
 ---
 
 ## [ISSUE-10-06] [v1.0][web_core] MessageProcessor with STRICT_VALIDATION throws A2uiIntegrityError (Dangling reference) on top-down streaming recommended by DirectJsonFormat
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3522](https://github.com/google/A2UI/issues/3522)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Streaming in Direct JSON`
@@ -5994,8 +5994,8 @@ Only `STRICT_VALIDATION` (which rejects top-down streaming due to `allowDangling
 ---
 
 ## [ISSUE-10-07] [v1.0][web_core] MessageProcessor constructor silently ignores STRICT_VALIDATION / RELAXED_VALIDATION when passed directly as the 3rd argument instead of { validationConfig }
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3523](https://github.com/google/A2UI/issues/3523)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Streaming in Direct JSON / MessageProcessor Validation`
@@ -6067,8 +6067,8 @@ const rawValidationConfig =
 ---
 
 ## [ISSUE-10-08] [v1.0][agent] DirectJsonResponseStream sets wholeItemKeys: ['components'] in v1.0, disabling progressiveKeys: ['text'] streaming inside updateComponents
-- **Status**: `[ ] PENDING`
-- **GitHub Issue**: _Not created yet_
+- **Status**: `[x] CREATED`
+- **GitHub Issue**: [#3524](https://github.com/google/A2UI/issues/3524)
 - **Label**: `v1-bug-bash`
 - **Type**: `Bug`
 - **Feature Area**: `Streaming in Direct JSON`
