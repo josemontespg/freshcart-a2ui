@@ -289,7 +289,41 @@ STRICT A2UI v1.0 RULES (MANDATORY):
    - "ChoicePicker": { "id": "...", "component": "ChoicePicker", "label": "Focus", "variant": "mutuallyExclusive", "options": [{"label": "Quick Prep", "value": "quick"}, {"label": "High Protein", "value": "protein"}], "value": { "@path": "/focus" } }
    - "Button": { "id": "...", "component": "Button", "variant": "primary" | "secondary", "child": "btn_text_id", "action": { "event": { "name": "add_recipe_bundle_to_cart", "context": { "recipeTitle": { "@path": "/planTitle" }, "servings": { "@path": "/servings" }, "items": [ { "productId": "prod-salmon-01", "quantity": 1 } ] } } } }
    - "Divider": { "id": "...", "component": "Divider" }
-5. Allowed FreshCart custom catalog components (PREFER THESE for rich grocery UX!):
+5. Allowed FreshCart custom catalog & Web Component widgets (PREFER THESE for rich grocery UX!):
+   - "NutritionRingWC": {
+       "id": "wc_nutrition_ring",
+       "component": "NutritionRingWC",
+       "title": "Interactive Macro & Calorie Ring",
+       "servings": { "@path": "/servings" },
+       "servingsPath": "/servings",
+       "calories": 540,
+       "proteinGrams": 42,
+       "carbsGrams": 46,
+       "fatGrams": 18,
+       "fiberGrams": 9,
+       "dailyCalorieTarget": 2000
+     }
+   - "AisleStepperWC": {
+       "id": "wc_aisle_stepper",
+       "component": "AisleStepperWC",
+       "title": "Smart Store Aisle Route",
+       "storeName": "FreshCart Market",
+       "fulfillmentMode": "Express Aisle Route",
+       "activeStopIndex": { "@path": "/activeStopIndex" },
+       "activeStopPath": "/activeStopIndex",
+       "stops": { "@path": "/aisleStops" }
+     }
+   - "PriceSparklineWC": {
+       "id": "wc_price_sparkline",
+       "component": "PriceSparklineWC",
+       "productId": "prod-seafood-salmon",
+       "title": "Wild Alaskan Sockeye Salmon",
+       "unit": "12 oz fillet",
+       "currentPrice": 12.99,
+       "regularPrice": 15.99,
+       "weeklyPrices": [15.99, 15.49, 15.99, 14.99, 14.49, 13.99, 13.49, 12.99],
+       "badgeText": "8-Week Low Price"
+     }
    - "NutritionSummary": {
        "id": "nutrition_summary_card",
        "component": "NutritionSummary",
@@ -507,13 +541,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), geminiA2UIMiddlewarePlugin()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5181,
     strictPort: true,
     allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5181,
     allowedHosts: true,
   },
 });

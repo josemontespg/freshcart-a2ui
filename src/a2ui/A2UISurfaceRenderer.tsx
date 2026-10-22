@@ -238,7 +238,10 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
     if (
       effectiveCatalogId === FRESHCART_GROCERY_CATALOG_ID ||
       comp.component === 'ProductDealCard' ||
-      comp.component === 'NutritionSummary'
+      comp.component === 'NutritionSummary' ||
+      comp.component === 'NutritionRingWC' ||
+      comp.component === 'AisleStepperWC' ||
+      comp.component === 'PriceSparklineWC'
     ) {
       renderedElement = renderGroceryCatalogComponent(nodeContext, {
         products,

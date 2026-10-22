@@ -45,6 +45,7 @@ import {
   recalculateBudgetBuilderDataModel,
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
+import { buildWebComponentsShowcaseStream } from '../../a2ui/web-components/freshcartWebComponents';
 import {
   buildCompactCartContext,
   buildCompactCatalogContext,
@@ -93,6 +94,8 @@ const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
+  'web-components':
+    'Launch the Interactive Web Components Kitchen & Aisle Companion',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
@@ -102,6 +105,8 @@ const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
     'I checked your cart against store inventory and found these smart swaps and backups:',
   'budget-builder':
     'Here is a customizable weekly budget and nutrition plan tailored for your kitchen:',
+  'web-components':
+    'Here is your interactive Smart Kitchen & Aisle Companion powered by W3C Custom Elements (<freshcart-nutrition-ring>, <freshcart-aisle-stepper>, and <freshcart-price-sparkline>) bound to the live A2UI v1.0 dataModel:',
 };
 
 function rewriteEnvelopesSurfaceId(
@@ -155,6 +160,16 @@ function inferScenarioFromPrompt(
 ): ScenarioId {
   const lower = promptText.toLowerCase();
   if (
+    lower.includes('web component') ||
+    lower.includes('custom element') ||
+    lower.includes('aisle') ||
+    lower.includes('sparkline') ||
+    lower.includes('nutrition ring') ||
+    lower.includes('🧩')
+  ) {
+    return 'web-components';
+  }
+  if (
     lower.includes('swap') ||
     lower.includes('cart') ||
     lower.includes('sav') ||
@@ -196,7 +211,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   products: propProducts,
   cartItems: propCartItems,
   actionHandler: propActionHandler,
-  initialScenarioId = 'meal-planner',
+  initialScenarioId = 'web-components',
   activeScenarioId: controlledScenarioId,
   onScenarioChange,
   onDispatchA2UIMessage,
@@ -248,6 +263,13 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
 
+      if (scenarioHint === 'web-components') {
+        return buildWebComponentsShowcaseStream(
+          effectiveProducts,
+          effectiveStoreName
+        );
+      }
+
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
           effectiveCartItems,
@@ -294,7 +316,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         activeStoreId: effectiveStoreId,
       });
     },
-    [effectiveCartItems, effectiveProducts, effectiveStoreId]
+    [effectiveCartItems, effectiveProducts, effectiveStoreId, effectiveStoreName]
   );
 
   const mergedSurfaces = externalSurfaces
@@ -367,7 +389,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
         },
       ]);
 
-      if (preferBlueprintInstant) {
+      if (preferBlueprintInstant || scenarioHint === 'web-components') {
         const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
         dispatchEnvelopesForSurface(envelopes, surfaceId, 'Quick Action');
         setChatTurns((prev) => [

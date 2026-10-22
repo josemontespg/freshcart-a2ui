@@ -103,7 +103,12 @@ export type A2UIBasicComponentType =
   | 'Slider'
   | 'DateTimeInput';
 
-export type A2UIGroceryComponentType = 'ProductDealCard' | 'NutritionSummary';
+export type A2UIGroceryComponentType =
+  | 'ProductDealCard'
+  | 'NutritionSummary'
+  | 'NutritionRingWC'
+  | 'AisleStepperWC'
+  | 'PriceSparklineWC';
 
 export type A2UIComponentType =
   | A2UIBasicComponentType
