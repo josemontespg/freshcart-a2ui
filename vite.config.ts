@@ -75,31 +75,18 @@ function sanitizeSurfaceEnvelopes(
     }
   }
 
-  let surfaceId = fallbackSurfaceId;
-  for (const env of rawEnvelopes) {
-    const cs = env.createSurface as Record<string, unknown> | undefined;
-    const uc = env.updateComponents as Record<string, unknown> | undefined;
-    if (cs && typeof cs.surfaceId === 'string' && cs.surfaceId.trim()) {
-      surfaceId = cs.surfaceId.trim();
-      break;
-    }
-    if (uc && typeof uc.surfaceId === 'string' && uc.surfaceId.trim()) {
-      surfaceId = uc.surfaceId.trim();
-      break;
-    }
-  }
+  const surfaceId = fallbackSurfaceId;
 
   const normalized: Record<string, unknown>[] = [];
   let hasCreateSurface = false;
 
   for (const env of rawEnvelopes) {
     if (env.createSurface && typeof env.createSurface === 'object') {
-      const cs = env.createSurface as Record<string, unknown>;
       hasCreateSurface = true;
       normalized.push({
         version: 'v1.0',
         createSurface: {
-          surfaceId: typeof cs.surfaceId === 'string' ? cs.surfaceId : surfaceId,
+          surfaceId,
           catalogId: FRESHCART_CATALOG_ID,
           sendDataModel: true,
         },
@@ -221,7 +208,7 @@ function sanitizeSurfaceEnvelopes(
       normalized.push({
         version: 'v1.0',
         updateComponents: {
-          surfaceId: typeof uc.surfaceId === 'string' ? uc.surfaceId : surfaceId,
+          surfaceId,
           components: sanitizedComponents,
         },
       });
@@ -232,7 +219,7 @@ function sanitizeSurfaceEnvelopes(
       normalized.push({
         version: 'v1.0',
         updateDataModel: {
-          surfaceId: typeof udm.surfaceId === 'string' ? udm.surfaceId : surfaceId,
+          surfaceId,
           path: typeof udm.path === 'string' ? udm.path : '/',
           value: udm.value ?? {},
         },
@@ -409,7 +396,14 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
             'budget-builder': 'budget-nutrition-surface',
             custom: 'gemini-live-surface',
           };
-          const targetSurfaceId = surfaceIdByScenario[scenarioHint] || 'gemini-live-surface';
+          const requestedSurfaceId =
+            typeof body.surfaceId === 'string' && body.surfaceId.trim()
+              ? body.surfaceId.trim()
+              : undefined;
+          const targetSurfaceId =
+            requestedSurfaceId ||
+            surfaceIdByScenario[scenarioHint] ||
+            'gemini-live-surface';
 
           const promptPayload = {
             userRequest: userPrompt,
