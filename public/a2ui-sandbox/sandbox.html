@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none';" />
+    <title>A2UI v1.0 MCP-UI Double-Iframe Sandbox Proxy</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: transparent;
+        overflow: hidden;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0 none transparent;
+        padding: 0;
+        overflow: hidden;
+        flex-grow: 1;
+        background-color: transparent;
+        color-scheme: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      /**
+       * A2UI v1.0 Double-Iframe Sandbox Proxy (`/a2ui-sandbox/sandbox.html`)
+       *
+       * Implements the normative A2UI v1.0 MCP App Component Specification
+       * (`catalogs/mcp/v1/mcp_app_specification.md` & `typescript/catalogs/shared/sandbox/sandbox.ts`):
+       * 1. Validates framing (`window.self !== window.top`) and `document.referrer` origin.
+       * 2. Creates the untrusted inner iframe with strict sandbox flags (`allow-scripts allow-forms allow-modals`),
+       *    strictly stripping `allow-same-origin`, `allow-top-navigation`, `allow-top-navigation-by-user-activation`,
+       *    `allow-popups`, and `allow-popups-to-escape-sandbox`.
+       * 3. Injects a strict `<meta http-equiv="Content-Security-Policy">` into the inner `srcdoc` document
+       *    (`default-src 'none'; connect-src 'none'; form-action 'none'; ...`).
+       * 4. Announces `ui/notifications/sandbox-proxy-ready` (JSON-RPC 2.0) and `a2ui_sandbox_proxy_ready` to Host.
+       * 5. Relays JSON-RPC 2.0 messages between Host (`expectedHostOrigin`) and Inner Iframe (`"null"` opaque origin).
+       */
+      const PROXY_READY_NOTIFICATION = 'ui/notifications/sandbox-proxy-ready';
+      const RESOURCE_READY_NOTIFICATION = 'ui/notifications/sandbox-resource-ready';
+      const A2UI_PROXY_READY = 'a2ui_sandbox_proxy_ready';
+      const A2UI_RESOURCE_READY = 'a2ui_sandbox_resource_ready';
+
+      const DEFAULT_INNER_SANDBOX = 'allow-scripts allow-forms allow-modals';
+      const FORBIDDEN_SANDBOX_FLAGS = new Set([
+        'allow-same-origin',
+        'allow-top-navigation',
+        'allow-top-navigation-by-user-activation',
+        'allow-popups',
+        'allow-popups-to-escape-sandbox',
+      ]);
+
+      const SENSITIVE_PERMISSIONS = [
+        'camera',
+        'microphone',
+        'geolocation',
+        'clipboard-read',
+        'clipboard-write',
+      ];
+
+      function normalizeOrigin(origin) {
+        return String(origin || '').replace('://127.0.0.1', '://localhost');
+      }
+
+      function buildAllowAttribute(permissions) {
+        if (!permissions || typeof permissions !== 'object') return '';
+        const features = [];
+        if (permissions.camera) features.push('camera');
+        if (permissions.microphone) features.push('microphone');
+        if (permissions.geolocation) features.push('geolocation');
+        if (permissions.clipboardWrite) features.push('clipboard-write');
+        return features.join('; ');
+      }
+
+      function buildPermissionsPolicy(allowAttribute = '') {
+        if (!allowAttribute.trim()) {
+          return SENSITIVE_PERMISSIONS.map((f) => `${f} 'none'`).join('; ') + ';';
+        }
+        const allowedDirectives = allowAttribute
+          .split(';')
+          .map((d) => d.trim())
+          .filter(Boolean);
+        const allowedNames = new Set(
+          allowedDirectives.map((d) => d.split(/\s+/)[0].toLowerCase())
+        );
+        const merged = [...allowedDirectives];
+        for (const feature of SENSITIVE_PERMISSIONS) {
+          if (!allowedNames.has(feature)) {
+            merged.push(`${feature} 'none'`);
+          }
+        }
+        return merged.join('; ') + ';';
+      }
+
+      function sanitizeCspDomains(domains) {
+        if (!Array.isArray(domains)) return [];
+        return domains
+          .filter((d) => typeof d === 'string')
+          .map((d) => d.trim())
+          .filter((d) => d.length > 0 && !/[;"'\s]/.test(d));
+      }
+
+      function buildInnerCspContent(csp) {
+        const connectDomains = sanitizeCspDomains(csp?.connectDomains);
+        const resourceDomains = sanitizeCspDomains(csp?.resourceDomains);
+        const frameDomains = sanitizeCspDomains(csp?.frameDomains);
+        const baseUriDomains = sanitizeCspDomains(csp?.baseUriDomains);
+
+        const resourceSuffix =
+          resourceDomains.length > 0 ? ` ${resourceDomains.join(' ')}` : '';
+        const connectSrc =
+          connectDomains.length > 0 ? connectDomains.join(' ') : "'none'";
+        const frameSrc =
+          frameDomains.length > 0 ? frameDomains.join(' ') : "'none'";
+        const baseUri =
+          baseUriDomains.length > 0
+            ? `'self' ${baseUriDomains.join(' ')}`
+            : "'self'";
+
+        return (
+          [
+            "default-src 'none'",
+            `script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:${resourceSuffix}`,
+            `style-src 'self' 'unsafe-inline' blob: data:${resourceSuffix}`,
+            `img-src 'self' data: blob: https:${resourceSuffix}`,
+            `font-src 'self' data: blob:${resourceSuffix}`,
+            `media-src 'self' data: blob:${resourceSuffix}`,
+            `connect-src ${connectSrc}`,
+            `frame-src ${frameSrc}`,
+            `base-uri ${baseUri}`,
+            "form-action 'none'",
+          ].join('; ') + ';'
+        );
+      }
+
+      function injectCspMeta(html, csp) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const meta = doc.createElement('meta');
+        meta.setAttribute('http-equiv', 'Content-Security-Policy');
+        meta.setAttribute('content', buildInnerCspContent(csp));
+        doc.head.prepend(meta);
+        const doctype = doc.doctype ? `<!DOCTYPE ${doc.doctype.name}>\n` : '<!DOCTYPE html>\n';
+        return `${doctype}${doc.documentElement.outerHTML}`;
+      }
+
+      function startSandboxProxy() {
+        if (window.self === window.top) {
+          throw new Error('This file is only to be used in an iframe sandbox.');
+        }
+
+        const ownOrigin = new URL(window.location.href).origin;
+        const expectedHostOrigin = document.referrer
+          ? new URL(document.referrer).origin
+          : ownOrigin;
+
+        const inner = document.createElement('iframe');
+        inner.style.cssText = 'width:100%; height:100%; border:none;';
+        inner.setAttribute('sandbox', DEFAULT_INNER_SANDBOX);
+        inner.setAttribute('allow', buildPermissionsPolicy());
+        document.body.appendChild(inner);
+
+        window.addEventListener('message', (event) => {
+          if (event.source === window.parent) {
+            if (
+              normalizeOrigin(event.origin) !==
+              normalizeOrigin(expectedHostOrigin)
+            ) {
+              console.error(
+                '[Sandbox Proxy] Rejecting message from unexpected parent origin:',
+                event.origin,
+                'expected:',
+                expectedHostOrigin
+              );
+              return;
+            }
+
+            const data = event.data;
+            const isMcpResourceReady =
+              data &&
+              typeof data === 'object' &&
+              data.method === RESOURCE_READY_NOTIFICATION;
+            const isA2uiResourceReady =
+              data &&
+              typeof data === 'object' &&
+              data.type === A2UI_RESOURCE_READY;
+
+            if (isMcpResourceReady || isA2uiResourceReady) {
+              const payload = isMcpResourceReady ? data.params || {} : data;
+              const html =
+                typeof payload.html === 'string'
+                  ? payload.html
+                  : typeof payload.htmlContent === 'string'
+                    ? payload.htmlContent
+                    : undefined;
+              const url =
+                typeof payload.url === 'string' ? payload.url : undefined;
+              const rawSandbox =
+                typeof payload.sandbox === 'string'
+                  ? payload.sandbox
+                  : DEFAULT_INNER_SANDBOX;
+
+              const safeSandbox = rawSandbox
+                .split(/\s+/)
+                .filter(
+                  (flag) =>
+                    flag && !FORBIDDEN_SANDBOX_FLAGS.has(flag.toLowerCase())
+                )
+                .join(' ');
+
+              inner.setAttribute(
+                'sandbox',
+                safeSandbox || DEFAULT_INNER_SANDBOX
+              );
+              inner.setAttribute(
+                'allow',
+                buildPermissionsPolicy(buildAllowAttribute(payload.permissions))
+              );
+
+              const sendInit = () => {
+                // Inner iframe has opaque ("null") origin because allow-same-origin is stripped.
+                inner.contentWindow?.postMessage({ type: 'sandbox-init' }, '*');
+              };
+
+              if (html !== undefined) {
+                inner.onload = sendInit;
+                inner.removeAttribute('src');
+                inner.srcdoc = injectCspMeta(html, payload.csp);
+              } else if (url !== undefined) {
+                inner.onload = sendInit;
+                inner.removeAttribute('srcdoc');
+                inner.src = url;
+              }
+            } else if (inner.contentWindow) {
+              inner.contentWindow.postMessage(
+                event.data,
+                '*',
+                event.ports ? [...event.ports] : []
+              );
+            }
+          } else if (event.source === inner.contentWindow) {
+            // Without allow-same-origin, inner iframe origin serializes to "null"
+            if (event.origin !== ownOrigin && event.origin !== 'null') {
+              console.error(
+                '[Sandbox Proxy] Rejecting message from inner iframe with unexpected origin:',
+                event.origin
+              );
+              return;
+            }
+            window.parent.postMessage(event.data, expectedHostOrigin);
+          }
+        });
+
+        // 1. Notify MCP Apps Host (JSON-RPC 2.0)
+        window.parent.postMessage(
+          {
+            jsonrpc: '2.0',
+            method: PROXY_READY_NOTIFICATION,
+            params: {},
+          },
+          expectedHostOrigin
+        );
+
+        // 2. Notify A2UI WebAppFrame Host
+        window.parent.postMessage(
+          {
+            type: A2UI_PROXY_READY,
+          },
+          expectedHostOrigin
+        );
+      }
+
+      startSandboxProxy();
+    </script>
+  </body>
+</html>

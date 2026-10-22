@@ -6,6 +6,9 @@ export const A2UI_BASIC_CATALOG_ID =
 export const FRESHCART_GROCERY_CATALOG_ID =
   'https://freshcart.app/catalogs/grocery/v1/catalog.json' as const;
 
+export const A2UI_MCP_CATALOG_ID =
+  'https://a2ui.org/specification/v1_0/catalogs/mcp/catalog.json' as const;
+
 /**
  * A2UI v1.0 DataBinding uses the reserved `@path` key pointing to a
  * JSON Pointer (RFC 6901) path in the surface DataModel (or relative path
@@ -105,9 +108,12 @@ export type A2UIBasicComponentType =
 
 export type A2UIGroceryComponentType = 'ProductDealCard' | 'NutritionSummary';
 
+export type A2UIMcpComponentType = 'McpApp';
+
 export type A2UIComponentType =
   | A2UIBasicComponentType
-  | A2UIGroceryComponentType;
+  | A2UIGroceryComponentType
+  | A2UIMcpComponentType;
 
 export interface A2UIComponentBase {
   id: string;

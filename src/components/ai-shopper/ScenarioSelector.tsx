@@ -4,11 +4,16 @@ import {
   UtensilsCrossed,
   ArrowLeftRight,
   Wallet,
+  ShieldCheck,
   Send,
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'mcp-kitchen'
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +36,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-mcp-kitchen',
+    label: '🧪 MCP Kitchen Sandbox',
+    prompt:
+      'Launch the sandboxed MCP Kitchen Converter & Pairing App with two-way @path data binding and MCP tools/call.',
+    scenarioId: 'mcp-kitchen',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',
@@ -102,6 +114,13 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({
     badge?: string;
     icon: React.ReactNode;
   }> = [
+    {
+      id: 'mcp-kitchen',
+      title: 'MCP Sandbox',
+      subtitle: 'Double-iframe McpApp',
+      badge: 'v1.0 MCP',
+      icon: <ShieldCheck className="w-4 h-4" />,
+    },
     {
       id: 'meal-planner',
       title: 'Meal Planner',

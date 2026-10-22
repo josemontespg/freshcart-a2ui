@@ -571,6 +571,37 @@ export function evaluateFunctionCall(
       return undefined;
     }
 
+    case 'callMcpTool': {
+      const serverUrl = String(args.serverUrl ?? '').trim();
+      const toolName = String(args.toolName ?? '').trim();
+      const toolArgs =
+        typeof args.arguments === 'object' &&
+        args.arguments !== null &&
+        !Array.isArray(args.arguments)
+          ? (args.arguments as Record<string, unknown>)
+          : {};
+      const targetDataPath =
+        typeof args.targetDataPath === 'string' && args.targetDataPath.trim().length > 0
+          ? args.targetDataPath.trim()
+          : undefined;
+
+      const invocation = {
+        protocolVersion: '1.0',
+        serverUrl,
+        toolName,
+        arguments: toolArgs,
+        ...(targetDataPath ? { targetDataPath } : {}),
+      };
+
+      if (typeof window !== 'undefined' && context.isUserActivated && toolName) {
+        window.dispatchEvent(
+          new CustomEvent('a2ui:callMcpTool', { detail: invocation })
+        );
+      }
+
+      return invocation;
+    }
+
     default:
       return undefined;
   }
