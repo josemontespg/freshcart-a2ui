@@ -4,6 +4,10 @@ import {
   X,
   Send,
   RotateCcw,
+  Radio,
+  Layers,
+  Play,
+  Terminal,
 } from 'lucide-react';
 import {
   A2UI_VERSION,
@@ -48,7 +52,9 @@ import {
 import {
   buildCompactCartContext,
   buildCompactCatalogContext,
-  generateA2UISurfaceWithGemini,
+  sliceClientEnvelopesForStreaming,
+  streamA2UISurfaceWithGemini,
+  type DirectJsonDeliveryMode,
 } from '../../services/geminiA2UIService';
 import {
   QUICK_PROMPT_CHIPS,
@@ -57,12 +63,25 @@ import {
 
 export type { ScenarioId };
 
+export interface SurfaceStreamTelemetry {
+  surfaceId: string;
+  deliveryMode: DirectJsonDeliveryMode;
+  isStreaming: boolean;
+  currentStep: number;
+  totalSteps: number;
+  currentStage: 'createSurface' | 'updateComponents' | 'updateDataModel';
+  stageLabel: string;
+  elapsedMs: number;
+  tokenChars?: number;
+}
+
 export interface ChatTurn {
   id: string;
   role: 'user' | 'assistant';
   text: string;
   surfaceId?: string;
   scenarioHint?: ScenarioId;
+  promptUsed?: string;
 }
 
 export interface AIShopperDrawerProps {
@@ -187,6 +206,8 @@ function inferScenarioFromPrompt(
   return fallback;
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   isOpen = true,
   onClose,
@@ -202,6 +223,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   onDispatchA2UIMessage,
   onRecordOutboundAction,
   surfaces: externalSurfaces,
+  onOpenProtocolInspector,
 }) => {
   const cartCtx = useCart();
 
@@ -218,6 +240,11 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [deliveryMode, setDeliveryMode] =
+    useState<DirectJsonDeliveryMode>('progressive-sse');
+  const [streamTelemetryBySurface, setStreamTelemetryBySurface] = useState<
+    Record<string, SurfaceStreamTelemetry>
+  >({});
 
   const turnCounterRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -230,16 +257,6 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       onDispatchA2UIMessage?.(message, sourceLabel);
     },
     [onDispatchA2UIMessage]
-  );
-
-  const dispatchEnvelopesForSurface = useCallback(
-    (envelopes: A2UIv1Message[], surfaceId: string, label: string) => {
-      const boundEnvelopes = rewriteEnvelopesSurfaceId(envelopes, surfaceId);
-      boundEnvelopes.forEach((msg, idx) => {
-        dispatchMessage(msg, `${label} [${idx + 1}/${boundEnvelopes.length}]`);
-      });
-    },
-    [dispatchMessage]
   );
 
   const buildFallbackEnvelopesForPrompt = useCallback(
@@ -301,10 +318,186 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     ? { ...internalManagerState.surfaces, ...externalSurfaces }
     : internalManagerState.surfaces;
 
-  // Scroll to bottom when turns or loading state change
+  // Scroll to bottom when turns or streaming updates change
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [chatTurns.length, isGenerating]);
+
+  // Execute a real SSE stream (or client-side progressive fallback) for a target surfaceId
+  const executeSurfaceStream = useCallback(
+    async (options: {
+      surfaceId: string;
+      promptText: string;
+      scenarioHint: ScenarioId;
+      modeOverride?: DirectJsonDeliveryMode;
+      preferBlueprintStream?: boolean;
+      assistantTurnId?: string;
+    }) => {
+      const {
+        surfaceId,
+        promptText,
+        scenarioHint,
+        modeOverride,
+        preferBlueprintStream = false,
+        assistantTurnId,
+      } = options;
+      const activeMode = modeOverride ?? deliveryMode;
+      const startedAt = performance.now();
+
+      const blueprintEnvelopes = rewriteEnvelopesSurfaceId(
+        buildFallbackEnvelopesForPrompt(promptText, scenarioHint),
+        surfaceId
+      );
+
+      setIsGenerating(true);
+      setStreamTelemetryBySurface((prev) => ({
+        ...prev,
+        [surfaceId]: {
+          surfaceId,
+          deliveryMode: activeMode,
+          isStreaming: true,
+          currentStep: 0,
+          totalSteps: activeMode === 'single-shot-direct-json' ? 1 : 10,
+          currentStage: 'createSurface',
+          stageLabel:
+            activeMode === 'single-shot-direct-json'
+              ? 'Dispatching Single-Shot createSurface (inline components + dataModel)...'
+              : 'Opening SSE Direct JSON stream (/api/gemini/a2ui-stream)...',
+          elapsedMs: 0,
+        },
+      }));
+
+      try {
+        const doneEvent = await streamA2UISurfaceWithGemini(
+          {
+            prompt: promptText,
+            scenarioHint,
+            surfaceId,
+            deliveryMode: activeMode,
+            chunkDelayMs: activeMode === 'single-shot-direct-json' ? 0 : 115,
+            preferBlueprintStream,
+            clientEnvelopes: preferBlueprintStream ? blueprintEnvelopes : undefined,
+            summary: SCENARIO_ASSISTANT_INTROS[scenarioHint],
+            activeStore: {
+              id: effectiveStoreId,
+              name: effectiveStoreName,
+            },
+            cartItems: buildCompactCartContext(effectiveCartItems),
+            availableProducts: buildCompactCatalogContext(
+              effectiveProducts,
+              effectiveStoreId
+            ),
+          },
+          {
+            onTokenProgress: (prog) => {
+              setStreamTelemetryBySurface((prev) => {
+                const cur = prev[surfaceId];
+                if (!cur) return prev;
+                return {
+                  ...prev,
+                  [surfaceId]: {
+                    ...cur,
+                    tokenChars: prog.accumulatedChars,
+                    stageLabel: `Streaming Gemini Direct JSON tokens (${prog.accumulatedChars} chars)...`,
+                    elapsedMs: prog.elapsedMs,
+                  },
+                };
+              });
+            },
+            onEnvelope: (stageEvt) => {
+              dispatchMessage(
+                stageEvt.envelope,
+                `SSE ${stageEvt.stage} [${stageEvt.index}/${stageEvt.total}] — ${stageEvt.label}`
+              );
+              setStreamTelemetryBySurface((prev) => ({
+                ...prev,
+                [surfaceId]: {
+                  surfaceId,
+                  deliveryMode: stageEvt.deliveryMode,
+                  isStreaming: stageEvt.index < stageEvt.total,
+                  currentStep: stageEvt.index,
+                  totalSteps: stageEvt.total,
+                  currentStage: stageEvt.stage,
+                  stageLabel: stageEvt.label,
+                  elapsedMs: stageEvt.elapsedMs,
+                },
+              }));
+            },
+          }
+        );
+
+        if (assistantTurnId && doneEvent.summary) {
+          setChatTurns((prev) =>
+            prev.map((t) =>
+              t.id === assistantTurnId ? { ...t, text: doneEvent.summary } : t
+            )
+          );
+        }
+
+        setStreamTelemetryBySurface((prev) => {
+          const cur = prev[surfaceId];
+          return {
+            ...prev,
+            [surfaceId]: {
+              surfaceId,
+              deliveryMode: doneEvent.deliveryMode,
+              isStreaming: false,
+              currentStep: doneEvent.totalEnvelopes,
+              totalSteps: doneEvent.totalEnvelopes,
+              currentStage: cur?.currentStage ?? 'updateDataModel',
+              stageLabel:
+                doneEvent.deliveryMode === 'single-shot-direct-json'
+                  ? 'Delivered via Single-Shot createSurface (inline components + dataModel)'
+                  : `Streamed ${doneEvent.totalEnvelopes} A2UI v1.0 Direct JSON envelopes over SSE`,
+              elapsedMs: doneEvent.latencyMs,
+            },
+          };
+        });
+      } catch {
+        // Fallback: progressively slice & stream client-side if offline
+        const packets = sliceClientEnvelopesForStreaming(
+          blueprintEnvelopes,
+          surfaceId,
+          activeMode
+        );
+        for (let i = 0; i < packets.length; i++) {
+          const pkt = packets[i];
+          dispatchMessage(
+            pkt.envelope,
+            `Direct JSON ${pkt.stage} [${i + 1}/${packets.length}] — ${pkt.label}`
+          );
+          const elapsed = Math.round(performance.now() - startedAt);
+          setStreamTelemetryBySurface((prev) => ({
+            ...prev,
+            [surfaceId]: {
+              surfaceId,
+              deliveryMode: activeMode,
+              isStreaming: i < packets.length - 1,
+              currentStep: i + 1,
+              totalSteps: packets.length,
+              currentStage: pkt.stage,
+              stageLabel: pkt.label,
+              elapsedMs: elapsed,
+            },
+          }));
+          if (i < packets.length - 1 && activeMode === 'progressive-sse') {
+            await sleep(110);
+          }
+        }
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [
+      buildFallbackEnvelopesForPrompt,
+      deliveryMode,
+      dispatchMessage,
+      effectiveCartItems,
+      effectiveProducts,
+      effectiveStoreId,
+      effectiveStoreName,
+    ]
+  );
 
   // Seed initial welcome assistant turn with an interactive surface on mount
   const initializedRef = useRef(false);
@@ -315,25 +508,47 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     const initialScen = controlledScenarioId ?? initialScenarioId;
     turnCounterRef.current += 1;
     const initSurfaceId = `chat_surface_${turnCounterRef.current}`;
-    const envelopes = buildFallbackEnvelopesForPrompt(
-      SCENARIO_USER_PROMPTS[initialScen],
-      initialScen
+    const promptText = SCENARIO_USER_PROMPTS[initialScen];
+    const envelopes = buildFallbackEnvelopesForPrompt(promptText, initialScen);
+    const sliced = sliceClientEnvelopesForStreaming(
+      envelopes,
+      initSurfaceId,
+      'progressive-sse'
     );
-    dispatchEnvelopesForSurface(envelopes, initSurfaceId, 'Welcome Turn');
+    sliced.forEach((pkt, idx) => {
+      dispatchMessage(
+        pkt.envelope,
+        `Initial Stream [${idx + 1}/${sliced.length}] — ${pkt.label}`
+      );
+    });
+
+    setStreamTelemetryBySurface({
+      [initSurfaceId]: {
+        surfaceId: initSurfaceId,
+        deliveryMode: 'progressive-sse',
+        isStreaming: false,
+        currentStep: sliced.length,
+        totalSteps: sliced.length,
+        currentStage: 'updateDataModel',
+        stageLabel: `Streamed ${sliced.length} A2UI v1.0 Direct JSON envelopes (createSurface → updateComponents → updateDataModel)`,
+        elapsedMs: 140,
+      },
+    });
 
     setChatTurns([
       {
         id: `turn_${turnCounterRef.current}`,
         role: 'assistant',
-        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Tell me what you'd like to cook, ask for a weekly meal plan, or let me find savings in your cart.`,
+        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Ask a question or click any suggestion pill below to watch A2UI v1.0 surfaces stream progressively in real time.`,
         surfaceId: initSurfaceId,
         scenarioHint: initialScen,
+        promptUsed: promptText,
       },
     ]);
   }, [
     buildFallbackEnvelopesForPrompt,
     controlledScenarioId,
-    dispatchEnvelopesForSurface,
+    dispatchMessage,
     effectiveStoreName,
     initialScenarioId,
   ]);
@@ -342,7 +557,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
     async (
       userText: string,
       explicitScenario?: ScenarioId,
-      preferBlueprintInstant = false
+      preferBlueprintStream = false,
+      modeOverride?: DirectJsonDeliveryMode
     ) => {
       const trimmed = userText.trim();
       if (!trimmed || isGenerating) return;
@@ -358,6 +574,8 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const assistantTurnId = `turn_${assistantTurnNum}`;
       const surfaceId = `chat_surface_${assistantTurnNum}`;
 
+      // Mount both the user message and the assistant turn immediately so the
+      // surface renders progressively in real time inside the assistant bubble!
       setChatTurns((prev) => [
         ...prev,
         {
@@ -365,93 +583,54 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           role: 'user',
           text: trimmed,
         },
+        {
+          id: assistantTurnId,
+          role: 'assistant',
+          text: SCENARIO_ASSISTANT_INTROS[scenarioHint],
+          surfaceId,
+          scenarioHint,
+          promptUsed: trimmed,
+        },
       ]);
 
-      if (preferBlueprintInstant) {
-        const envelopes = buildFallbackEnvelopesForPrompt(trimmed, scenarioHint);
-        dispatchEnvelopesForSurface(envelopes, surfaceId, 'Quick Action');
-        setChatTurns((prev) => [
-          ...prev,
-          {
-            id: assistantTurnId,
-            role: 'assistant',
-            text: SCENARIO_ASSISTANT_INTROS[scenarioHint],
-            surfaceId,
-            scenarioHint,
-          },
-        ]);
-        return;
-      }
-
-      setIsGenerating(true);
-      try {
-        const response = await generateA2UISurfaceWithGemini({
-          prompt: trimmed,
-          scenarioHint,
-          surfaceId,
-          activeStore: {
-            id: effectiveStoreId,
-            name: effectiveStoreName,
-          },
-          cartItems: buildCompactCartContext(effectiveCartItems),
-          availableProducts: buildCompactCatalogContext(
-            effectiveProducts,
-            effectiveStoreId
-          ),
-          currentSurfaceState: null,
-        });
-
-        dispatchEnvelopesForSurface(
-          response.envelopes,
-          surfaceId,
-          'AI Shopper Reply'
-        );
-
-        setChatTurns((prev) => [
-          ...prev,
-          {
-            id: assistantTurnId,
-            role: 'assistant',
-            text:
-              response.summary || SCENARIO_ASSISTANT_INTROS[scenarioHint],
-            surfaceId,
-            scenarioHint,
-          },
-        ]);
-      } catch {
-        const fallbackEnvelopes = buildFallbackEnvelopesForPrompt(
-          trimmed,
-          scenarioHint
-        );
-        dispatchEnvelopesForSurface(
-          fallbackEnvelopes,
-          surfaceId,
-          'AI Shopper Reply'
-        );
-        setChatTurns((prev) => [
-          ...prev,
-          {
-            id: assistantTurnId,
-            role: 'assistant',
-            text: SCENARIO_ASSISTANT_INTROS[scenarioHint],
-            surfaceId,
-            scenarioHint,
-          },
-        ]);
-      } finally {
-        setIsGenerating(false);
-      }
+      await executeSurfaceStream({
+        surfaceId,
+        promptText: trimmed,
+        scenarioHint,
+        modeOverride,
+        preferBlueprintStream,
+        assistantTurnId,
+      });
     },
-    [
-      buildFallbackEnvelopesForPrompt,
-      dispatchEnvelopesForSurface,
-      effectiveCartItems,
-      effectiveProducts,
-      effectiveStoreId,
-      effectiveStoreName,
-      isGenerating,
-      onScenarioChange,
-    ]
+    [executeSurfaceStream, isGenerating, onScenarioChange]
+  );
+
+  const handleReplaySurface = useCallback(
+    (
+      surfaceId: string,
+      scenarioHint: ScenarioId = 'meal-planner',
+      promptUsed?: string,
+      modeOverride?: DirectJsonDeliveryMode
+    ) => {
+      if (isGenerating) return;
+      const promptText = promptUsed || SCENARIO_USER_PROMPTS[scenarioHint];
+      // Delete existing surface first so user watches it build from scratch
+      dispatchMessage(
+        {
+          version: A2UI_VERSION,
+          deleteSurface: { surfaceId },
+        },
+        `Reset ${surfaceId} for Replay`
+      );
+      void executeSurfaceStream({
+        surfaceId,
+        promptText,
+        scenarioHint,
+        modeOverride,
+        preferBlueprintStream: true,
+      });
+    },
+    [dispatchMessage, executeSurfaceStream, isGenerating]
   );
 
   // Sync external scenario launches from HeroBanner or TopNavbar
@@ -484,25 +663,24 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
   const handleResetChat = useCallback(() => {
     turnCounterRef.current += 1;
     const resetSurfaceId = `chat_surface_${turnCounterRef.current}`;
-    const envelopes = buildFallbackEnvelopesForPrompt(
-      SCENARIO_USER_PROMPTS['meal-planner'],
-      'meal-planner'
-    );
-    dispatchEnvelopesForSurface(envelopes, resetSurfaceId, 'Reset Chat');
+    const promptText = SCENARIO_USER_PROMPTS['meal-planner'];
     setChatTurns([
       {
         id: `turn_${turnCounterRef.current}`,
         role: 'assistant',
-        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Tell me what you'd like to cook, ask for a weekly meal plan, or let me find savings in your cart.`,
+        text: `Hi! I'm your AI Personal Shopper for ${effectiveStoreName}. Watch this dinner plan stream progressively via A2UI v1.0 Direct JSON:`,
         surfaceId: resetSurfaceId,
         scenarioHint: 'meal-planner',
+        promptUsed: promptText,
       },
     ]);
-  }, [
-    buildFallbackEnvelopesForPrompt,
-    dispatchEnvelopesForSurface,
-    effectiveStoreName,
-  ]);
+    void executeSurfaceStream({
+      surfaceId: resetSurfaceId,
+      promptText,
+      scenarioHint: 'meal-planner',
+      preferBlueprintStream: true,
+    });
+  }, [effectiveStoreName, executeSurfaceStream]);
 
   // Handle two-way input data binding changes on any surface in the chat thread
   const handleDataModelChange = useCallback(
@@ -905,42 +1083,95 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
 
   return (
     <aside className={containerClasses} aria-label="AI Personal Shopper Chat">
-      {/* Minimal Chat Header */}
-      <div className="bg-white border-b border-stone-200/80 px-4 py-3.5 flex items-center justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-[#0AAD0A] flex items-center justify-center shrink-0 shadow-2xs">
-            <Sparkles className="w-4 h-4 text-white" />
+      {/* Chat Header + Direct JSON Streaming Mode Selector */}
+      <div className="bg-white border-b border-stone-200/80 px-4 py-3 space-y-2.5 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-[#0AAD0A] flex items-center justify-center shrink-0 shadow-2xs">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm font-bold text-stone-900 truncate">
+                  AI Personal Shopper
+                </h2>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                  <Radio className="w-2.5 h-2.5 text-[#0AAD0A]" />
+                  Direct JSON Stream
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500 truncate">
+                {effectiveStoreName} · A2UI v1.0 Live SSE
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-stone-900 truncate">
-              AI Personal Shopper
-            </h2>
-            <p className="text-[11px] text-stone-500 truncate">
-              {effectiveStoreName}
-            </p>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {onOpenProtocolInspector && (
+              <button
+                type="button"
+                onClick={() => onOpenProtocolInspector()}
+                title="Open A2UI v1.0 Protocol Inspector"
+                aria-label="Open A2UI v1.0 Protocol Inspector"
+                className="p-2 rounded-full text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+              >
+                <Terminal className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleResetChat}
+              title="Replay initial stream"
+              aria-label="Replay initial stream"
+              className="p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close AI Personal Shopper"
+                className="p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        {/* Direct JSON Delivery Mode Toggle Bar (Feature 10 Showcase) */}
+        <div
+          className="flex items-center justify-between gap-2 bg-stone-100/90 p-1 rounded-xl border border-stone-200/70"
+          role="group"
+          aria-label="A2UI v1.0 Direct JSON Delivery Mode"
+        >
           <button
             type="button"
-            onClick={handleResetChat}
-            title="Start new chat"
-            aria-label="Start new chat"
-            className="p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
+            disabled={isGenerating}
+            onClick={() => setDeliveryMode('progressive-sse')}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold py-1.5 px-2.5 rounded-lg transition-all cursor-pointer ${
+              deliveryMode === 'progressive-sse'
+                ? 'bg-white text-emerald-900 shadow-2xs border border-emerald-200/80'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
           >
-            <RotateCcw className="w-4 h-4" />
+            <Radio className="w-3 h-3 text-[#0AAD0A]" />
+            <span>Progressive SSE Stream</span>
           </button>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close AI Personal Shopper"
-              className="p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={isGenerating}
+            onClick={() => setDeliveryMode('single-shot-direct-json')}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold py-1.5 px-2.5 rounded-lg transition-all cursor-pointer ${
+              deliveryMode === 'single-shot-direct-json'
+                ? 'bg-white text-emerald-900 shadow-2xs border border-emerald-200/80'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
+          >
+            <Layers className="w-3 h-3 text-amber-600" />
+            <span>Single-Shot createSurface</span>
+          </button>
         </div>
       </div>
 
@@ -960,6 +1191,19 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           const surfaceState = turn.surfaceId
             ? mergedSurfaces[turn.surfaceId]
             : undefined;
+          const telemetry = turn.surfaceId
+            ? streamTelemetryBySurface[turn.surfaceId]
+            : undefined;
+          const componentCount = surfaceState
+            ? Object.keys(surfaceState.componentsById).length
+            : 0;
+          const progressPct =
+            telemetry && telemetry.totalSteps > 0
+              ? Math.min(
+                  100,
+                  Math.round((telemetry.currentStep / telemetry.totalSteps) * 100)
+                )
+              : 100;
 
           return (
             <div key={turn.id} className="flex items-start gap-2.5">
@@ -971,6 +1215,86 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
                 {turn.text && (
                   <div className="bg-white border border-stone-200/80 text-stone-800 text-sm px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-2xs leading-relaxed">
                     {turn.text}
+                  </div>
+                )}
+
+                {/* Live Direct JSON Streaming Status & Replay Card */}
+                {turn.surfaceId && telemetry && (
+                  <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/55 px-3.5 py-2.5 space-y-2 shadow-2xs">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            telemetry.isStreaming
+                              ? 'bg-[#0AAD0A] animate-ping'
+                              : 'bg-[#0AAD0A]'
+                          }`}
+                        />
+                        <span className="text-[11px] font-bold text-emerald-950 truncate">
+                          {telemetry.deliveryMode === 'single-shot-direct-json'
+                            ? 'A2UI v1.0 Single-Shot createSurface'
+                            : telemetry.isStreaming
+                              ? `Streaming Direct JSON (${telemetry.currentStep}/${telemetry.totalSteps})`
+                              : `Progressive SSE Direct JSON (${telemetry.totalSteps} envelopes)`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-medium text-stone-600 bg-white/90 px-2 py-0.5 rounded-full border border-stone-200/80">
+                          {componentCount} nodes · {telemetry.elapsedMs}ms
+                        </span>
+                        <button
+                          type="button"
+                          disabled={isGenerating}
+                          onClick={() =>
+                            handleReplaySurface(
+                              turn.surfaceId!,
+                              turn.scenarioHint ?? 'meal-planner',
+                              turn.promptUsed,
+                              'progressive-sse'
+                            )
+                          }
+                          title="Watch this surface stream progressively again"
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0AAD0A] hover:bg-[#089208] disabled:opacity-50 text-white transition-colors cursor-pointer"
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          <span>Replay Stream</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isGenerating}
+                          onClick={() =>
+                            handleReplaySurface(
+                              turn.surfaceId!,
+                              turn.scenarioHint ?? 'meal-planner',
+                              turn.promptUsed,
+                              telemetry.deliveryMode === 'single-shot-direct-json'
+                                ? 'progressive-sse'
+                                : 'single-shot-direct-json'
+                            )
+                          }
+                          title="Compare Single-Shot createSurface vs Progressive SSE"
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white hover:bg-stone-100 disabled:opacity-50 text-stone-700 border border-stone-200/90 transition-colors cursor-pointer"
+                        >
+                          {telemetry.deliveryMode === 'single-shot-direct-json'
+                            ? 'Try Progressive'
+                            : 'Try Single-Shot'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Progress bar + live envelope stage label */}
+                    <div className="space-y-1">
+                      <div className="h-1.5 w-full rounded-full bg-emerald-200/60 overflow-hidden">
+                        <div
+                          className="h-full bg-[#0AAD0A] transition-all duration-200 rounded-full"
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] font-mono text-emerald-900/90 truncate">
+                        {telemetry.stageLabel}
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -990,22 +1314,24 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           );
         })}
 
-        {/* Typing Indicator Bubble */}
-        {isGenerating && (
-          <div className="flex items-start gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-emerald-100 text-[#0AAD0A] flex items-center justify-center shrink-0 mt-0.5">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+        {/* Typing Indicator Bubble when awaiting first envelope */}
+        {isGenerating &&
+          chatTurns.length > 0 &&
+          !mergedSurfaces[chatTurns[chatTurns.length - 1]?.surfaceId ?? ''] && (
+            <div className="flex items-start gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-emerald-100 text-[#0AAD0A] flex items-center justify-center shrink-0 mt-0.5">
+                <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              </div>
+              <div className="bg-white border border-stone-200/80 text-stone-600 text-xs px-4 py-3 rounded-2xl rounded-tl-xs shadow-2xs inline-flex items-center gap-2">
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0AAD0A] animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0AAD0A] animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0AAD0A] animate-bounce" />
+                </span>
+                <span>Connecting to A2UI v1.0 Direct JSON SSE stream...</span>
+              </div>
             </div>
-            <div className="bg-white border border-stone-200/80 text-stone-600 text-xs px-4 py-3 rounded-2xl rounded-tl-xs shadow-2xs inline-flex items-center gap-2">
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0AAD0A] animate-bounce [animation-delay:-0.3s]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0AAD0A] animate-bounce [animation-delay:-0.15s]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0AAD0A] animate-bounce" />
-              </span>
-              <span>Thinking...</span>
-            </div>
-          </div>
-        )}
+          )}
 
         <div ref={chatEndRef} />
       </div>
@@ -1019,7 +1345,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
               type="button"
               disabled={isGenerating}
               onClick={() =>
-                void sendUserMessage(chip.label, chip.scenarioId)
+                void sendUserMessage(chip.prompt, chip.scenarioId, true)
               }
               className="text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70 transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer"
             >
@@ -1034,7 +1360,7 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
             value={inputValue}
             disabled={isGenerating}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask for a recipe, meal plan, or cart swap..."
+            placeholder="Ask for a recipe, meal plan, or cart swap (streams live)..."
             aria-label="Message AI Personal Shopper"
             className="w-full text-sm bg-stone-100/80 border border-stone-200/90 focus:border-[#0AAD0A] focus:bg-white rounded-full pl-4 pr-11 py-2.5 text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0AAD0A]/15 transition-all disabled:opacity-60"
           />
