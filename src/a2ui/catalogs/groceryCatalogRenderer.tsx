@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRightLeft,
   CheckCircle2,
@@ -11,6 +11,7 @@ import {
 import type { A2UIAction } from '../../types/a2ui-v1';
 import type { Product } from '../../types/grocery';
 import {
+  evaluateDynamicValue,
   resolveDynamicBoolean,
   resolveDynamicNumber,
   resolveDynamicString,
@@ -19,6 +20,14 @@ import {
   type A2UIRenderNodeContext,
   ValidationFeedbackList,
 } from './basicCatalogRenderer';
+import {
+  FRESHCART_WC_TAGS,
+  type AisleStopItem,
+  type AisleStepperWCProps,
+  type NutritionRingWCProps,
+  type PriceSparklineWCProps,
+  registerFreshCartWebComponents,
+} from '../web-components/freshcartWebComponents';
 
 export interface GroceryCatalogExtraContext {
   products?: Product[];
@@ -369,8 +378,338 @@ const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 };
 
 /**
+ * Custom Grocery Web Component 3: `NutritionRingWC` (`<freshcart-nutrition-ring>`)
+ *
+ * Mounts the real W3C Custom Element `<freshcart-nutrition-ring>`, passes
+ * resolved A2UI v1.0 `@path` values via `.wcProps`, and bridges `freshcart-wc-change`
+ * custom events back to `updateDataModelPath`.
+ */
+const A2UINutritionRingWCBridge: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
+  const { component, evalContext, updateDataModelPath } = ctx;
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const wcRef = useRef<(HTMLElement & { wcProps?: Partial<NutritionRingWCProps> }) | null>(
+    null
+  );
+
+  const rawServings = component.servings as
+    | { '@path'?: string }
+    | number
+    | undefined;
+  const inferredServingsPath =
+    typeof rawServings === 'object' &&
+    rawServings !== null &&
+    typeof rawServings['@path'] === 'string'
+      ? rawServings['@path']
+      : resolveDynamicString(component.servingsPath, evalContext, '/servings');
+
+  const resolvedProps: NutritionRingWCProps = {
+    title: resolveDynamicString(
+      component.title ?? component.label,
+      evalContext,
+      'Interactive Macro & Calorie Ring'
+    ),
+    calories: resolveDynamicNumber(component.calories, evalContext, 540),
+    dailyCalorieTarget: resolveDynamicNumber(
+      component.dailyCalorieTarget,
+      evalContext,
+      2000
+    ),
+    proteinGrams: resolveDynamicNumber(
+      component.proteinGrams ?? component.protein,
+      evalContext,
+      42
+    ),
+    carbsGrams: resolveDynamicNumber(
+      component.carbsGrams ?? component.carbs,
+      evalContext,
+      46
+    ),
+    fatGrams: resolveDynamicNumber(
+      component.fatGrams ?? component.fat,
+      evalContext,
+      18
+    ),
+    fiberGrams: resolveDynamicNumber(
+      component.fiberGrams ?? component.fiber,
+      evalContext,
+      9
+    ),
+    servings: resolveDynamicNumber(component.servings, evalContext, 4),
+    servingsPath: inferredServingsPath,
+  };
+
+  useEffect(() => {
+    registerFreshCartWebComponents();
+    const container = hostRef.current;
+    if (!container) return;
+
+    let el = wcRef.current;
+    if (!el) {
+      el = document.createElement(FRESHCART_WC_TAGS.nutritionRing) as HTMLElement & {
+        wcProps?: Partial<NutritionRingWCProps>;
+      };
+      wcRef.current = el;
+      container.replaceChildren(el);
+    }
+
+    const handleChange = (evt: Event) => {
+      const detail = (evt as CustomEvent<{ path?: string; value?: unknown }>)
+        .detail;
+      if (detail?.path) {
+        updateDataModelPath(detail.path, detail.value);
+      }
+    };
+
+    el.addEventListener('freshcart-wc-change', handleChange);
+    return () => {
+      el?.removeEventListener('freshcart-wc-change', handleChange);
+    };
+  }, [updateDataModelPath]);
+
+  useEffect(() => {
+    if (wcRef.current) {
+      wcRef.current.wcProps = resolvedProps;
+    }
+  });
+
+  return <div ref={hostRef} className="w-full" />;
+};
+
+/**
+ * Custom Grocery Web Component 4: `AisleStepperWC` (`<freshcart-aisle-stepper>`)
+ *
+ * Mounts the real W3C Custom Element `<freshcart-aisle-stepper>`, syncs resolved
+ * A2UI v1.0 `@path` stops & activeStopIndex, and bridges `freshcart-wc-change`
+ * and `freshcart-wc-action` events back to the A2UI surface and FreshCart cart.
+ */
+const A2UIAisleStepperWCBridge: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
+  const { component, evalContext, updateDataModelPath, dispatchAction } = ctx;
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const wcRef = useRef<(HTMLElement & { wcProps?: Partial<AisleStepperWCProps> }) | null>(
+    null
+  );
+
+  const rawStops = evaluateDynamicValue(component.stops, evalContext);
+  const stops: AisleStopItem[] = Array.isArray(rawStops)
+    ? (rawStops as AisleStopItem[])
+    : [];
+
+  const resolvedProps: AisleStepperWCProps = {
+    title: resolveDynamicString(
+      component.title,
+      evalContext,
+      'Smart Store Aisle Route & Express Pickup'
+    ),
+    storeName: resolveDynamicString(
+      component.storeName,
+      evalContext,
+      'FreshCart Market · Mission Bay'
+    ),
+    fulfillmentMode: resolveDynamicString(
+      component.fulfillmentMode,
+      evalContext,
+      'Express Aisle Route'
+    ),
+    activeStopIndex: resolveDynamicNumber(
+      component.activeStopIndex,
+      evalContext,
+      0
+    ),
+    activeStopPath: resolveDynamicString(
+      component.activeStopPath,
+      evalContext,
+      '/activeStopIndex'
+    ),
+    stops,
+  };
+
+  useEffect(() => {
+    registerFreshCartWebComponents();
+    const container = hostRef.current;
+    if (!container) return;
+
+    let el = wcRef.current;
+    if (!el) {
+      el = document.createElement(FRESHCART_WC_TAGS.aisleStepper) as HTMLElement & {
+        wcProps?: Partial<AisleStepperWCProps>;
+      };
+      wcRef.current = el;
+      container.replaceChildren(el);
+    }
+
+    const handleChange = (evt: Event) => {
+      const detail = (evt as CustomEvent<{ path?: string; value?: unknown }>)
+        .detail;
+      if (detail?.path) {
+        updateDataModelPath(detail.path, detail.value);
+      }
+    };
+
+    const handleAction = (evt: Event) => {
+      const detail = (
+        evt as CustomEvent<{
+          actionName?: string;
+          productId?: string;
+          productName?: string;
+          quantity?: number;
+        }>
+      ).detail;
+      if (detail?.productId) {
+        dispatchAction(
+          component.id,
+          {
+            event: {
+              name: detail.actionName || 'addToCart',
+              context: {
+                productId: detail.productId,
+                quantity: detail.quantity ?? 1,
+                title: detail.productName ?? 'Aisle Item',
+              },
+            },
+          },
+          evalContext
+        );
+      }
+    };
+
+    el.addEventListener('freshcart-wc-change', handleChange);
+    el.addEventListener('freshcart-wc-action', handleAction);
+    return () => {
+      el?.removeEventListener('freshcart-wc-change', handleChange);
+      el?.removeEventListener('freshcart-wc-action', handleAction);
+    };
+  }, [component.id, dispatchAction, evalContext, updateDataModelPath]);
+
+  useEffect(() => {
+    if (wcRef.current) {
+      wcRef.current.wcProps = resolvedProps;
+    }
+  });
+
+  return <div ref={hostRef} className="w-full" />;
+};
+
+/**
+ * Custom Grocery Web Component 5: `PriceSparklineWC` (`<freshcart-price-sparkline>`)
+ *
+ * Mounts the real W3C Custom Element `<freshcart-price-sparkline>` and forwards
+ * `freshcart-wc-action` events when the user locks the 8-week low deal into their cart.
+ */
+const A2UIPriceSparklineWCBridge: React.FC<{
+  ctx: A2UIRenderNodeContext;
+  extra?: GroceryCatalogExtraContext;
+}> = ({ ctx, extra }) => {
+  const { component, evalContext, dispatchAction } = ctx;
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const wcRef = useRef<(HTMLElement & { wcProps?: Partial<PriceSparklineWCProps> }) | null>(
+    null
+  );
+
+  const productId = resolveDynamicString(
+    component.productId,
+    evalContext,
+    'prod-seafood-salmon'
+  );
+  const matchedProduct = extra?.products?.find((p) => p.id === productId);
+
+  const rawPrices = evaluateDynamicValue(component.weeklyPrices, evalContext);
+  const weeklyPrices: number[] = Array.isArray(rawPrices)
+    ? rawPrices.map((n) => Number(n) || 0)
+    : [15.99, 15.49, 15.99, 14.99, 14.49, 13.99, 13.49, matchedProduct?.price ?? 12.99];
+
+  const resolvedProps: PriceSparklineWCProps = {
+    productId,
+    title: resolveDynamicString(
+      component.title,
+      evalContext,
+      matchedProduct?.name ?? 'Wild Alaskan Sockeye Salmon Fillet'
+    ),
+    unit: resolveDynamicString(
+      component.unit,
+      evalContext,
+      matchedProduct?.unit ?? '12 oz pack'
+    ),
+    currentPrice: resolveDynamicNumber(
+      component.currentPrice ?? component.price,
+      evalContext,
+      matchedProduct?.price ?? 12.99
+    ),
+    regularPrice: resolveDynamicNumber(
+      component.regularPrice ?? component.originalPrice,
+      evalContext,
+      matchedProduct?.originalPrice ?? 15.99
+    ),
+    weeklyPrices,
+    badgeText: resolveDynamicString(
+      component.badgeText,
+      evalContext,
+      '8-Week Low Price'
+    ),
+  };
+
+  useEffect(() => {
+    registerFreshCartWebComponents();
+    const container = hostRef.current;
+    if (!container) return;
+
+    let el = wcRef.current;
+    if (!el) {
+      el = document.createElement(FRESHCART_WC_TAGS.priceSparkline) as HTMLElement & {
+        wcProps?: Partial<PriceSparklineWCProps>;
+      };
+      wcRef.current = el;
+      container.replaceChildren(el);
+    }
+
+    const handleAction = (evt: Event) => {
+      const detail = (
+        evt as CustomEvent<{
+          actionName?: string;
+          productId?: string;
+          productName?: string;
+          quantity?: number;
+        }>
+      ).detail;
+      if (detail?.productId) {
+        dispatchAction(
+          component.id,
+          {
+            event: {
+              name: detail.actionName || 'addToCart',
+              context: {
+                productId: detail.productId,
+                quantity: detail.quantity ?? 1,
+                title: detail.productName ?? resolvedProps.title,
+              },
+            },
+          },
+          evalContext
+        );
+      }
+    };
+
+    el.addEventListener('freshcart-wc-action', handleAction);
+    return () => {
+      el?.removeEventListener('freshcart-wc-action', handleAction);
+    };
+  }, [component.id, dispatchAction, evalContext, resolvedProps.title]);
+
+  useEffect(() => {
+    if (wcRef.current) {
+      wcRef.current.wcProps = resolvedProps;
+    }
+  });
+
+  return <div ref={hostRef} className="w-full" />;
+};
+
+/**
  * Dispatches custom FreshCart Grocery Catalog components
- * (`ProductDealCard`, `NutritionSummary`).
+ * (`ProductDealCard`, `NutritionSummary`, `NutritionRingWC`, `AisleStepperWC`, `PriceSparklineWC`).
  */
 export function renderGroceryCatalogComponent(
   ctx: A2UIRenderNodeContext,
@@ -381,6 +720,12 @@ export function renderGroceryCatalogComponent(
       return <A2UIProductDealCard ctx={ctx} extra={extra} />;
     case 'NutritionSummary':
       return <A2UINutritionSummary ctx={ctx} />;
+    case 'NutritionRingWC':
+      return <A2UINutritionRingWCBridge ctx={ctx} />;
+    case 'AisleStepperWC':
+      return <A2UIAisleStepperWCBridge ctx={ctx} />;
+    case 'PriceSparklineWC':
+      return <A2UIPriceSparklineWCBridge ctx={ctx} extra={extra} />;
     default:
       return null;
   }

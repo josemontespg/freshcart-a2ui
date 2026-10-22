@@ -8,7 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder'
+  | 'web-components';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +35,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-web-components',
+    label: '🧩 Interactive Web Components',
+    prompt:
+      'Show the interactive Web Components kitchen & aisle companion with live radial macro rings, in-store aisle stepper, and 8-week price sparkline.',
+    scenarioId: 'web-components',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',
