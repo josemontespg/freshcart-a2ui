@@ -391,6 +391,7 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
           const actionEvent = body.actionEvent ?? null;
 
           const surfaceIdByScenario: Record<string, string> = {
+            'express-checkout': 'express_dinner_surface',
             'meal-planner': 'meal-planner-surface',
             'cart-optimizer': 'cart-optimizer-surface',
             'budget-builder': 'budget-nutrition-surface',
@@ -507,13 +508,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), geminiA2UIMiddlewarePlugin()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5186,
     strictPort: true,
     allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5186,
     allowedHosts: true,
   },
 });

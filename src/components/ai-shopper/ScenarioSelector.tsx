@@ -8,7 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export type ScenarioId = 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+export type ScenarioId =
+  | 'express-checkout'
+  | 'meal-planner'
+  | 'cart-optimizer'
+  | 'budget-builder';
 
 export type AIEngineMode = 'gemini-live' | 'blueprint';
 
@@ -31,6 +35,13 @@ export interface QuickPromptChip {
 }
 
 export const QUICK_PROMPT_CHIPS: QuickPromptChip[] = [
+  {
+    id: 'chip-express-dinner',
+    label: '⚡ 15-Min Express Dinner',
+    prompt:
+      'Build a 15-minute express garlic herb salmon & heirloom tomato skillet for 2 with 1-tap express cart checkout.',
+    scenarioId: 'express-checkout',
+  },
   {
     id: 'chip-salmon-4',
     label: '🥗 Salmon dinner for 4',

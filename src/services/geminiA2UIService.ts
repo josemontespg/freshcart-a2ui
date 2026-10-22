@@ -50,7 +50,11 @@ export interface CompactCartItemContext {
 
 export interface GeminiA2UIRequest {
   prompt: string;
-  scenarioHint?: 'meal-planner' | 'cart-optimizer' | 'budget-builder';
+  scenarioHint?:
+    | 'express-checkout'
+    | 'meal-planner'
+    | 'cart-optimizer'
+    | 'budget-builder';
   surfaceId?: string;
   activeStore?: {
     id: StoreId;
