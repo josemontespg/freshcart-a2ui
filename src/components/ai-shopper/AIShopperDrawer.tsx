@@ -46,6 +46,11 @@ import {
   type BudgetBasketItem,
 } from '../../scenarios/budgetBuilderScenario';
 import {
+  buildMixedCatalogsStream,
+  recalculateMixedCatalogsDataModel,
+  type MixedCatalogCourseItem,
+} from '../../scenarios/mixedCatalogsScenario';
+import {
   buildCompactCartContext,
   buildCompactCatalogContext,
   generateA2UISurfaceWithGemini,
@@ -93,6 +98,8 @@ const SCENARIO_USER_PROMPTS: Record<ScenarioId, string> = {
   'meal-planner': 'Plan tonight’s dinner for 4 with fresh ingredients',
   'cart-optimizer': 'Find smart savings and backups for items in my cart',
   'budget-builder': 'Build a $120 weekly high-protein grocery plan',
+  'mixed-catalogs':
+    'Launch the 3-Catalog Chef & Sommelier Tasting Showcase (Basic v1.0 + Grocery Merchandising v1 + Culinary & Sommelier v1)',
 };
 
 const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
@@ -102,6 +109,8 @@ const SCENARIO_ASSISTANT_INTROS: Record<ScenarioId, string> = {
     'I checked your cart against store inventory and found these smart swaps and backups:',
   'budget-builder':
     'Here is a customizable weekly budget and nutrition plan tailored for your kitchen:',
+  'mixed-catalogs':
+    'Here is a live A2UI v1.0 Multi-Catalog surface mixing 3 distinct catalogs on a single surface — Basic v1.0 layout & controls, FreshCart Grocery Merchandising v1 (FlashCouponBanner, ProductDealCard, AisleMapLocator), and FreshCart Culinary & Sommelier v1 (NutritionSummary, WineAndCheesePairingCard, RecipeStepTimeline + custom @call functions calculatePerServingCost & matchDietaryScore):',
 };
 
 function rewriteEnvelopesSurfaceId(
@@ -154,6 +163,17 @@ function inferScenarioFromPrompt(
   fallback: ScenarioId = 'meal-planner'
 ): ScenarioId {
   const lower = promptText.toLowerCase();
+  if (
+    lower.includes('3-catalog') ||
+    lower.includes('mixed') ||
+    lower.includes('sommelier') ||
+    lower.includes('wine') ||
+    lower.includes('cheese') ||
+    lower.includes('culinary') ||
+    lower.includes('showcase')
+  ) {
+    return 'mixed-catalogs';
+  }
   if (
     lower.includes('swap') ||
     lower.includes('cart') ||
@@ -247,6 +267,16 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const lower = promptText.toLowerCase();
       const numMatch = promptText.match(/\$?\b(\d+)\b/);
       const parsedNum = numMatch ? Number(numMatch[1]) : undefined;
+
+      if (scenarioHint === 'mixed-catalogs') {
+        const servings =
+          parsedNum && parsedNum >= 1 && parsedNum <= 10 ? parsedNum : 4;
+        return buildMixedCatalogsStream({
+          servings,
+          products: effectiveProducts,
+          activeStoreId: effectiveStoreId,
+        });
+      }
 
       if (scenarioHint === 'cart-optimizer') {
         return buildCartOptimizerStream(
@@ -559,6 +589,22 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           },
           `Budget Recalculation (${pointerPath})`
         );
+      } else if (Array.isArray(nextModel.courses)) {
+        const recalculated = recalculateMixedCatalogsDataModel(
+          nextModel,
+          pointerPath
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: recalculated,
+            },
+          },
+          `3-Catalog Recalculation (${pointerPath})`
+        );
       } else {
         dispatchMessage(
           {
@@ -585,6 +631,172 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       const { name, surfaceId, context } = event.action;
       const currentSurface = mergedSurfaces[surfaceId];
       const currentModel = currentSurface?.dataModel ?? {};
+
+      if (name === 'clip_flash_coupon') {
+        const promoCode = String(context.promoCode ?? 'CHEFPAIR5');
+        effectiveActionHandler.applyPromoCode(promoCode);
+        const updated = recalculateMixedCatalogsDataModel(
+          {
+            ...currentModel,
+            couponClipped: true,
+            lastActionConfirmation: `Clipped ${promoCode} ($5.00 Off) via grocery/v1 FlashCouponBanner ✓`,
+          },
+          '/couponClipped'
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: updated,
+            },
+          },
+          `Flash Coupon Clipped (${promoCode})`
+        );
+        return;
+      }
+
+      if (name === 'add_featured_deal_to_cart') {
+        const productId = String(context.productId ?? 'prod-salmon-fillet');
+        const qty = Math.max(1, Number(context.quantity ?? 1));
+        const title = String(context.title ?? 'Chef Reserve Salmon');
+        effectiveActionHandler.addItemToCart(
+          productId,
+          qty,
+          'Added via grocery/v1 ProductDealCard'
+        );
+        const prevDeal =
+          typeof currentModel.featuredDeal === 'object' &&
+          currentModel.featuredDeal !== null
+            ? (currentModel.featuredDeal as Record<string, unknown>)
+            : {};
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: {
+                ...currentModel,
+                featuredDeal: {
+                  ...prevDeal,
+                  added: true,
+                },
+                lastActionConfirmation: `Added ${title} to cart via grocery/v1 ProductDealCard ✓`,
+              },
+            },
+          },
+          'Featured Deal Added'
+        );
+        return;
+      }
+
+      if (name === 'add_sommelier_pairing') {
+        const productId = String(context.productId ?? 'prod-aged-cheddar');
+        const qty = Math.max(1, Number(context.quantity ?? 1));
+        const title = String(
+          context.title ?? 'Sommelier & Fromager Pairing Bundle'
+        );
+        effectiveActionHandler.addItemToCart(
+          productId,
+          qty,
+          'Added via culinary/v1 WineAndCheesePairingCard'
+        );
+        const updated = recalculateMixedCatalogsDataModel(
+          {
+            ...currentModel,
+            includeWinePairing: true,
+            lastActionConfirmation: `Added ${title} to cart via culinary/v1 WineAndCheesePairingCard ✓`,
+          },
+          '/includeWinePairing'
+        );
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: updated,
+            },
+          },
+          'Sommelier Pairing Added'
+        );
+        return;
+      }
+
+      if (name === 'pin_aisle_route') {
+        const aisleCode = String(
+          context.aisleCode ?? 'Aisle 3 · Bay B & Fromager Counter'
+        );
+        const prevLocator =
+          typeof currentModel.aisleLocator === 'object' &&
+          currentModel.aisleLocator !== null
+            ? (currentModel.aisleLocator as Record<string, unknown>)
+            : {};
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/',
+              value: {
+                ...currentModel,
+                aisleLocator: {
+                  ...prevLocator,
+                  pinned: true,
+                },
+                lastActionConfirmation: `Pinned store navigation route to ${aisleCode} via grocery/v1 AisleMapLocator ✓`,
+              },
+            },
+          },
+          'Aisle Route Pinned'
+        );
+        return;
+      }
+
+      if (name === 'add_mixed_catalog_bundle') {
+        const servings = Number(context.servings ?? currentModel.servings ?? 4);
+        const rawCourses = Array.isArray(context.courses)
+          ? (context.courses as MixedCatalogCourseItem[])
+          : Array.isArray(currentModel.courses)
+            ? (currentModel.courses as MixedCatalogCourseItem[])
+            : [];
+        const includePairing = Boolean(
+          context.includeWinePairing ?? currentModel.includeWinePairing ?? true
+        );
+
+        const bundleItems = rawCourses
+          .filter((c) => c.checked !== false)
+          .map((c) => ({
+            productId: c.productId,
+            quantity: Math.max(1, Number(c.quantity ?? 1)),
+          }));
+        if (includePairing) {
+          bundleItems.push({ productId: 'prod-aged-cheddar', quantity: 1 });
+        }
+
+        if (bundleItems.length > 0) {
+          effectiveActionHandler.addBundleToCart(
+            bundleItems,
+            `3-Catalog Chef & Sommelier Tasting (${servings} guests)`
+          );
+        }
+
+        const confirmMsg = `Added ${bundleItems.length} tasting items (${servings} guests) from all 3 A2UI v1.0 catalogs to your cart ✓`;
+        dispatchMessage(
+          {
+            version: A2UI_VERSION,
+            updateDataModel: {
+              surfaceId,
+              path: '/lastActionConfirmation',
+              value: confirmMsg,
+            },
+          },
+          '3-Catalog Tasting Bundle Added'
+        );
+        return;
+      }
 
       if (name === 'add_recipe_bundle_to_cart') {
         const servings = Number(context.servings ?? currentModel.servings ?? 4);
@@ -921,7 +1133,22 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            disabled={isGenerating}
+            onClick={() =>
+              void sendUserMessage(
+                SCENARIO_USER_PROMPTS['mixed-catalogs'],
+                'mixed-catalogs',
+                true
+              )
+            }
+            title="Launch 3-Catalog Mixed Surface Showcase (Basic v1.0 + Grocery v1 + Culinary v1)"
+            className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#073E1E] to-violet-900 px-2.5 py-1 text-[11px] font-bold text-white hover:from-[#0AAD0A] hover:to-violet-700 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+          >
+            <span>🍷 3-Catalog Surface</span>
+          </button>
           <button
             type="button"
             onClick={handleResetChat}
@@ -1013,19 +1240,26 @@ export const AIShopperDrawer: React.FC<AIShopperDrawerProps> = ({
       {/* Bottom Chat Composer + Quick Suggestion Pills */}
       <div className="bg-white border-t border-stone-200/80 p-3 space-y-2.5 shrink-0">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          {QUICK_PROMPT_CHIPS.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              disabled={isGenerating}
-              onClick={() =>
-                void sendUserMessage(chip.label, chip.scenarioId)
-              }
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70 transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer"
-            >
-              {chip.label}
-            </button>
-          ))}
+          {QUICK_PROMPT_CHIPS.map((chip) => {
+            const isMixedShowcase = chip.scenarioId === 'mixed-catalogs';
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                disabled={isGenerating}
+                onClick={() =>
+                  void sendUserMessage(chip.label, chip.scenarioId, true)
+                }
+                className={
+                  isMixedShowcase
+                    ? 'text-xs font-bold px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#073E1E] via-emerald-800 to-violet-900 text-white hover:from-[#0AAD0A] hover:to-violet-700 border border-emerald-400/40 shadow-xs transition-all whitespace-nowrap disabled:opacity-50 cursor-pointer'
+                    : 'text-xs font-medium px-3 py-1.5 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 text-stone-700 border border-stone-200/70 transition-colors whitespace-nowrap disabled:opacity-50 cursor-pointer'
+                }
+              >
+                {chip.label}
+              </button>
+            );
+          })}
         </div>
 
         <form onSubmit={handleFormSubmit} className="relative flex items-center">

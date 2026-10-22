@@ -67,20 +67,142 @@ const NutritionSummaryApi = {
   }).passthrough(),
 };
 
-// Build a unified Grocery v1.0 Catalog that includes all 18 Basic v1.0 components
-// plus our 2 custom grocery domain components (`ProductDealCard`, `NutritionSummary`)
+const AisleMapLocatorApi = {
+  name: 'AisleMapLocator',
+  schema: z.object({
+    weight: z.number().optional(),
+    productId: DynamicStringSchema.optional(),
+    itemName: DynamicStringSchema.optional(),
+    aisleCode: DynamicStringSchema.optional(),
+    sectionName: DynamicStringSchema.optional(),
+    shelfLevel: DynamicStringSchema.optional(),
+    stockNote: DynamicStringSchema.optional(),
+    walkingTime: DynamicStringSchema.optional(),
+    pinned: DynamicBooleanSchema.optional(),
+    action: ActionSchema.optional(),
+  }).passthrough(),
+};
+
+const FlashCouponBannerApi = {
+  name: 'FlashCouponBanner',
+  schema: z.object({
+    weight: z.number().optional(),
+    title: DynamicStringSchema.optional(),
+    subtitle: DynamicStringSchema.optional(),
+    promoCode: DynamicStringSchema.optional(),
+    expiresIn: DynamicStringSchema.optional(),
+    clipped: DynamicBooleanSchema.optional(),
+    badgeText: DynamicStringSchema.optional(),
+    action: ActionSchema.optional(),
+  }).passthrough(),
+};
+
+const RecipeStepTimelineApi = {
+  name: 'RecipeStepTimeline',
+  schema: z.object({
+    weight: z.number().optional(),
+    title: DynamicStringSchema.optional(),
+    totalPrepMinutes: DynamicNumberSchema.optional(),
+    difficulty: DynamicStringSchema.optional(),
+    steps: z.any().optional(),
+  }).passthrough(),
+};
+
+const WineAndCheesePairingCardApi = {
+  name: 'WineAndCheesePairingCard',
+  schema: z.object({
+    weight: z.number().optional(),
+    pairingTitle: DynamicStringSchema.optional(),
+    beveragePairing: DynamicStringSchema.optional(),
+    cheeseSelection: DynamicStringSchema.optional(),
+    tastingNotes: DynamicStringSchema.optional(),
+    servingTemp: DynamicStringSchema.optional(),
+    pairingPrice: DynamicNumberSchema.optional(),
+    added: DynamicBooleanSchema.optional(),
+    pairingScore: DynamicNumberSchema.optional(),
+    perServingCostLabel: DynamicStringSchema.optional(),
+    action: ActionSchema.optional(),
+  }).passthrough(),
+};
+
+const FormatSavingsBadgeFn = {
+  name: 'formatSavingsBadge',
+  returnType: 'string',
+  argumentSchema: z.object({
+    originalPrice: DynamicNumberSchema,
+    salePrice: DynamicNumberSchema,
+    couponSavings: DynamicNumberSchema.optional(),
+  }),
+  execute: (args) => {
+    const saved = Math.max(0, Number(args.originalPrice ?? 0) - Number(args.salePrice ?? 0) + Number(args.couponSavings ?? 0));
+    return `SAVE $${saved.toFixed(2)}`;
+  },
+};
+
+const CalculatePerServingCostFn = {
+  name: 'calculatePerServingCost',
+  returnType: 'string',
+  argumentSchema: z.object({
+    totalCost: DynamicNumberSchema,
+    servings: DynamicNumberSchema,
+    includeWinePairing: DynamicBooleanSchema.optional(),
+    winePairingPrice: DynamicNumberSchema.optional(),
+    discountAmount: DynamicNumberSchema.optional(),
+  }),
+  execute: (args) => {
+    const total =
+      Number(args.totalCost ?? 0) +
+      (args.includeWinePairing ? Number(args.winePairingPrice ?? 16.99) : 0) -
+      Number(args.discountAmount ?? 0);
+    const perGuest = Math.max(0, total) / Math.max(1, Number(args.servings ?? 4));
+    return `$${perGuest.toFixed(2)} / guest${args.includeWinePairing ? ' (with pairing)' : ''}`;
+  },
+};
+
+const MatchDietaryScoreFn = {
+  name: 'matchDietaryScore',
+  returnType: 'number',
+  argumentSchema: z.object({
+    baseScore: DynamicNumberSchema.optional(),
+    isOrganic: DynamicBooleanSchema.optional(),
+    isGlutenFree: DynamicBooleanSchema.optional(),
+    includeWinePairing: DynamicBooleanSchema.optional(),
+  }),
+  execute: (args) => {
+    let score = Number(args.baseScore ?? 92);
+    if (args.isOrganic) score += 4;
+    if (args.isGlutenFree) score += 2;
+    if (args.includeWinePairing) score += 2;
+    return Math.min(100, score);
+  },
+};
+
+// Build Grocery Merchandising v1.0 Catalog (`https://freshcart.app/catalogs/grocery/v1/catalog.json`)
 const groceryCatalogComponents = [
   ...Array.from(basicCatalog.components.values()),
   ProductDealCardApi,
+  AisleMapLocatorApi,
+  FlashCouponBannerApi,
   NutritionSummaryApi,
 ];
-const groceryCatalogFunctions = Array.from(basicCatalog.functions.values());
+const groceryCatalogFunctions = [
+  ...Array.from(basicCatalog.functions.values()),
+  FormatSavingsBadgeFn,
+];
 
 const groceryCatalog = new Catalog(
   'https://freshcart.app/catalogs/grocery/v1/catalog.json',
   '1.0',
   groceryCatalogComponents,
   groceryCatalogFunctions
+);
+
+// Build Culinary & Sommelier v1.0 Catalog (`https://freshcart.app/catalogs/culinary/v1/catalog.json`)
+const culinaryCatalog = new Catalog(
+  'https://freshcart.app/catalogs/culinary/v1/catalog.json',
+  '1.0',
+  [NutritionSummaryApi, RecipeStepTimelineApi, WineAndCheesePairingCardApi],
+  [CalculatePerServingCostFn, MatchDietaryScoreFn]
 );
 
 /**
@@ -624,7 +746,11 @@ async function runVerification() {
   console.log('    Engine: @a2ui/web_core/v1_0 (v0.14.0)');
   console.log('================================================================\n');
 
-  const processor = new MessageProcessor([basicCatalog, groceryCatalog]);
+  const processor = new MessageProcessor([
+    basicCatalog,
+    groceryCatalog,
+    culinaryCatalog,
+  ]);
 
   for (const scenario of CANONICAL_SCENARIOS) {
     console.log(`▶ Validating ${scenario.name}...`);
@@ -671,6 +797,7 @@ async function runVerification() {
     const mealMod = await vite.ssrLoadModule('/src/scenarios/mealPlannerScenario.ts');
     const cartMod = await vite.ssrLoadModule('/src/scenarios/cartOptimizerScenario.ts');
     const budgetMod = await vite.ssrLoadModule('/src/scenarios/budgetBuilderScenario.ts');
+    const mixedMod = await vite.ssrLoadModule('/src/scenarios/mixedCatalogsScenario.ts');
 
     const liveScenarios = [
       {
@@ -688,9 +815,25 @@ async function runVerification() {
         surfaceId: budgetMod.BUDGET_BUILDER_SURFACE_ID,
         envelopes: budgetMod.buildBudgetBuilderStream(),
       },
+      {
+        label: 'Live src/scenarios/mixedCatalogsScenario.ts -> buildMixedCatalogsStream() [3 Catalogs Mixed]',
+        surfaceId: mixedMod.MIXED_CATALOGS_SURFACE_ID,
+        envelopes: mixedMod.buildMixedCatalogsStream(),
+      },
     ];
 
-    const liveProcessor = new MessageProcessor([basicCatalog, groceryCatalog]);
+    const liveProcessor = new MessageProcessor(
+      [basicCatalog, groceryCatalog, culinaryCatalog],
+      undefined,
+      {
+        validationConfig: {
+          unknownComponent: 'error',
+          unknownFunction: 'error',
+          danglingComponentRef: 'error',
+          unreferencedComponent: 'error',
+        },
+      }
+    );
 
     for (const live of liveScenarios) {
       console.log(`▶ Validating ${live.label}...`);
@@ -701,7 +844,13 @@ async function runVerification() {
       }
       const compCount = surface.componentsModel.components.size;
       const rootComp = surface.componentsModel.get('root');
-      console.log(`  ✅ Live Surface "${surface.id}" validated by @a2ui/web_core/v1_0 (${compCount} components, root: ${rootComp?.type})`);
+      const catalogSet = new Set();
+      for (const [, cm] of surface.componentsModel.components.entries()) {
+        catalogSet.add(cm.catalog.id);
+      }
+      console.log(
+        `  ✅ Live Surface "${surface.id}" validated by @a2ui/web_core/v1_0 (${compCount} components, root: ${rootComp?.type}, catalogs: ${catalogSet.size})`
+      );
     }
     console.log('');
   } finally {

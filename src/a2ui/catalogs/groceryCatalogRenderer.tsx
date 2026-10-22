@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import {
   ArrowRightLeft,
   CheckCircle2,
+  Compass,
   Flame,
   Leaf,
+  MapPin,
+  Navigation,
   ShoppingCart,
   Sparkles,
   Tag,
+  TicketPercent,
+  Timer,
 } from 'lucide-react';
 import type { A2UIAction } from '../../types/a2ui-v1';
 import type { Product } from '../../types/grocery';
@@ -369,8 +374,250 @@ const A2UINutritionSummary: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
 };
 
 /**
+ * Custom Grocery Catalog Component 3: `AisleMapLocator`
+ * (`https://freshcart.app/catalogs/grocery/v1/catalog.json`)
+ *
+ * Interactive in-store aisle, bay, and temperature zone navigator with stock status
+ * and quick-add or highlight action.
+ */
+const A2UIAisleMapLocator: React.FC<{
+  ctx: A2UIRenderNodeContext;
+  extra?: GroceryCatalogExtraContext;
+}> = ({ ctx, extra }) => {
+  const { component, evalContext, validationState, dispatchAction } = ctx;
+
+  const productId = resolveDynamicString(component.productId, evalContext, '');
+  const matchedProduct = extra?.products?.find((p) => p.id === productId);
+
+  const itemName = resolveDynamicString(
+    component.itemName ?? component.title,
+    evalContext,
+    matchedProduct?.name ?? 'Wild Alaskan Sockeye Salmon Fillet'
+  );
+  const aisleCode = resolveDynamicString(
+    component.aisleCode ?? component.aisle,
+    evalContext,
+    matchedProduct?.aisleLocation ?? 'Aisle 3 · Bay B'
+  );
+  const sectionName = resolveDynamicString(
+    component.sectionName ?? component.zone,
+    evalContext,
+    'Sustainable Seafood & Cold Case'
+  );
+  const shelfLevel = resolveDynamicString(
+    component.shelfLevel,
+    evalContext,
+    'Eye-Level Chilled Display (34°F)'
+  );
+  const stockNote = resolveDynamicString(
+    component.stockNote,
+    evalContext,
+    'Fresh catch delivered this morning · 14 packs in stock'
+  );
+  const walkingTime = resolveDynamicString(
+    component.walkingTime,
+    evalContext,
+    '45 sec from Produce'
+  );
+  const isPinned = resolveDynamicBoolean(
+    component.pinned ?? component.located,
+    evalContext,
+    false
+  );
+  const actionLabel = resolveDynamicString(
+    component.actionLabel,
+    evalContext,
+    isPinned ? 'Pinned to Store Map ✓' : 'Pin Aisle Route'
+  );
+
+  const handleAction = () => {
+    if (!validationState.isValid) return;
+    dispatchAction(
+      component.id,
+      component.action as A2UIAction | undefined,
+      evalContext
+    );
+  };
+
+  return (
+    <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/60 via-white to-teal-50/40 p-4 shadow-xs">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/90 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900">
+            <MapPin className="h-3 w-3 text-[#0AAD0A]" />
+            {aisleCode}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-stone-600 border border-stone-200/80">
+            grocery/v1 · AisleMapLocator
+          </span>
+        </div>
+
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-teal-800 bg-teal-50 border border-teal-200/70 px-2.5 py-0.5 rounded-full">
+          <Compass className="h-3 w-3 text-teal-600" />
+          {walkingTime}
+        </span>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="space-y-1 min-w-0">
+          <h4 className="text-sm font-bold text-stone-900 truncate">
+            {itemName}
+          </h4>
+          <p className="text-xs font-semibold text-emerald-800">
+            {sectionName} · <span className="text-stone-600 font-normal">{shelfLevel}</span>
+          </p>
+          <p className="text-[11px] text-stone-500">{stockNote}</p>
+        </div>
+
+        {component.action !== undefined && (
+          <button
+            type="button"
+            onClick={handleAction}
+            disabled={!validationState.isValid}
+            className={`inline-flex items-center gap-1.5 shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              isPinned
+                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                : 'bg-[#073E1E] text-white hover:bg-[#0A5226] shadow-2xs'
+            }`}
+          >
+            {isPinned ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-[#0AAD0A]" />
+            ) : (
+              <Navigation className="h-3.5 w-3.5 text-emerald-300" />
+            )}
+            <span>{actionLabel}</span>
+          </button>
+        )}
+      </div>
+
+      <ValidationFeedbackList validationState={validationState} compact />
+    </div>
+  );
+};
+
+/**
+ * Custom Grocery Catalog Component 4: `FlashCouponBanner`
+ * (`https://freshcart.app/catalogs/grocery/v1/catalog.json`)
+ *
+ * Renders an interactive digital store coupon banner with promo code, savings badge,
+ * and one-click clip action.
+ */
+const A2UIFlashCouponBanner: React.FC<{ ctx: A2UIRenderNodeContext }> = ({
+  ctx,
+}) => {
+  const { component, evalContext, validationState, dispatchAction } = ctx;
+
+  const title = resolveDynamicString(
+    component.title ?? component.headline,
+    evalContext,
+    'Flash Sommelier & Seafood Bundle Coupon'
+  );
+  const subtitle = resolveDynamicString(
+    component.subtitle ?? component.description,
+    evalContext,
+    'Clip to save $5.00 instantly when pairing Wild Salmon with Artisan Cheese & Olives'
+  );
+  const promoCode = resolveDynamicString(
+    component.promoCode ?? component.code,
+    evalContext,
+    'CHEFPAIR5'
+  );
+  const badgeText = resolveDynamicString(
+    component.badgeText ?? component.savingsLabel,
+    evalContext,
+    'SAVE $5.00'
+  );
+  const expiresIn = resolveDynamicString(
+    component.expiresIn,
+    evalContext,
+    'Ends in 02:14:00'
+  );
+  const isClipped = resolveDynamicBoolean(
+    component.clipped ?? component.applied,
+    evalContext,
+    false
+  );
+  const actionLabel = resolveDynamicString(
+    component.actionLabel,
+    evalContext,
+    isClipped ? 'Coupon Clipped ($5.00 Off) ✓' : 'Clip $5.00 Coupon'
+  );
+
+  const handleClip = () => {
+    if (!validationState.isValid) return;
+    dispatchAction(
+      component.id,
+      component.action as A2UIAction | undefined,
+      evalContext
+    );
+  };
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border border-dashed p-4 transition-all ${
+        isClipped
+          ? 'border-[#0AAD0A] bg-emerald-50/70'
+          : 'border-amber-400/90 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/80'
+      }`}
+    >
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-extrabold text-white shadow-2xs">
+            <TicketPercent className="h-3 w-3" />
+            {badgeText}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 font-mono text-[10px] font-semibold text-amber-900 border border-amber-200/80">
+            grocery/v1 · FlashCouponBanner
+          </span>
+        </div>
+
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+          <Timer className="h-3 w-3 text-amber-600" />
+          {expiresIn}
+        </span>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="space-y-1 min-w-0">
+          <h4 className="text-sm font-bold text-stone-900">{title}</h4>
+          <p className="text-xs leading-relaxed text-stone-600">{subtitle}</p>
+          <div className="pt-0.5 flex items-center gap-2">
+            <span className="text-[11px] text-stone-500">Promo Code:</span>
+            <code className="rounded bg-white px-2 py-0.5 font-mono text-[11px] font-bold text-amber-900 border border-amber-300/80">
+              {promoCode}
+            </code>
+          </div>
+        </div>
+
+        {component.action !== undefined && (
+          <button
+            type="button"
+            onClick={handleClip}
+            disabled={!validationState.isValid}
+            className={`inline-flex items-center gap-1.5 shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+              isClipped
+                ? 'bg-[#0AAD0A] text-white shadow-2xs'
+                : 'bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-xs'
+            }`}
+          >
+            {isClipped ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            ) : (
+              <TicketPercent className="h-3.5 w-3.5" />
+            )}
+            <span>{actionLabel}</span>
+          </button>
+        )}
+      </div>
+
+      <ValidationFeedbackList validationState={validationState} compact />
+    </div>
+  );
+};
+
+/**
  * Dispatches custom FreshCart Grocery Catalog components
- * (`ProductDealCard`, `NutritionSummary`).
+ * (`ProductDealCard`, `AisleMapLocator`, `FlashCouponBanner`, `NutritionSummary`).
  */
 export function renderGroceryCatalogComponent(
   ctx: A2UIRenderNodeContext,
@@ -379,6 +626,10 @@ export function renderGroceryCatalogComponent(
   switch (ctx.component.component) {
     case 'ProductDealCard':
       return <A2UIProductDealCard ctx={ctx} extra={extra} />;
+    case 'AisleMapLocator':
+      return <A2UIAisleMapLocator ctx={ctx} extra={extra} />;
+    case 'FlashCouponBanner':
+      return <A2UIFlashCouponBanner ctx={ctx} />;
     case 'NutritionSummary':
       return <A2UINutritionSummary ctx={ctx} />;
     default:

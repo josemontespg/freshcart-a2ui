@@ -1,7 +1,9 @@
 import React, { useCallback } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Layers, Sparkles } from 'lucide-react';
 import {
   A2UI_BASIC_CATALOG_ID,
+  A2UI_CATALOG_REGISTRY,
+  FRESHCART_CULINARY_CATALOG_ID,
   FRESHCART_GROCERY_CATALOG_ID,
   type A2UIAction,
   type A2UIActionEvent,
@@ -27,6 +29,37 @@ import {
   renderBasicCatalogComponent,
 } from './catalogs/basicCatalogRenderer';
 import { renderGroceryCatalogComponent } from './catalogs/groceryCatalogRenderer';
+import { renderCulinaryCatalogComponent } from './catalogs/culinaryCatalogRenderer';
+
+function collectNestedFunctionCatalogs(
+  node: unknown,
+  defaultCatalogId: string,
+  out: Map<string, Set<string>>
+): void {
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      collectNestedFunctionCatalogs(item, defaultCatalogId, out);
+    }
+    return;
+  }
+  const rec = node as Record<string, unknown>;
+  if (typeof rec['@call'] === 'string') {
+    const fnName = rec['@call'];
+    if (!fnName.startsWith('@')) {
+      const catId =
+        typeof rec.catalogId === 'string' && rec.catalogId
+          ? rec.catalogId
+          : defaultCatalogId;
+      const set = out.get(catId) ?? new Set<string>();
+      set.add(`${fnName}()`);
+      out.set(catId, set);
+    }
+  }
+  for (const val of Object.values(rec)) {
+    collectNestedFunctionCatalogs(val, defaultCatalogId, out);
+  }
+}
 
 export interface A2UISurfaceRendererProps {
   /** Active surface state managed by SurfaceManager */
@@ -236,9 +269,20 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
     let renderedElement: React.ReactNode = null;
 
     if (
-      effectiveCatalogId === FRESHCART_GROCERY_CATALOG_ID ||
-      comp.component === 'ProductDealCard' ||
-      comp.component === 'NutritionSummary'
+      effectiveCatalogId === FRESHCART_CULINARY_CATALOG_ID ||
+      comp.component === 'RecipeStepTimeline' ||
+      comp.component === 'WineAndCheesePairingCard'
+    ) {
+      renderedElement = renderCulinaryCatalogComponent(nodeContext);
+    }
+
+    if (
+      renderedElement === null &&
+      (effectiveCatalogId === FRESHCART_GROCERY_CATALOG_ID ||
+        comp.component === 'ProductDealCard' ||
+        comp.component === 'AisleMapLocator' ||
+        comp.component === 'FlashCouponBanner' ||
+        comp.component === 'NutritionSummary')
     ) {
       renderedElement = renderGroceryCatalogComponent(nodeContext, {
         products,
@@ -359,17 +403,81 @@ export const A2UISurfaceRenderer: React.FC<A2UISurfaceRendererProps> = ({
   const rootComponentId =
     'root' in componentsById ? 'root' : componentKeys[0];
 
+  // Compute active catalog breakdown across components and @call functions
+  const defaultCatalogId = surface.catalogId || A2UI_BASIC_CATALOG_ID;
+  const compCounts = new Map<string, number>();
+  const fnMap = new Map<string, Set<string>>();
+  for (const comp of Object.values(componentsById)) {
+    const catId = comp.catalogId || defaultCatalogId;
+    compCounts.set(catId, (compCounts.get(catId) ?? 0) + 1);
+    collectNestedFunctionCatalogs(comp, defaultCatalogId, fnMap);
+  }
+  const allCatalogIds = Array.from(
+    new Set([...compCounts.keys(), ...fnMap.keys()])
+  );
+  const catalogStats = allCatalogIds.map((catId) => ({
+    catalogId: catId,
+    descriptor: A2UI_CATALOG_REGISTRY[catId],
+    isDefault: catId === defaultCatalogId,
+    componentCount: compCounts.get(catId) ?? 0,
+    functions: Array.from(fnMap.get(catId) ?? []),
+  }));
+
+  const isMultiCatalogSurface = catalogStats.length >= 2;
+
   return (
     <div
       data-surface-id={surface.surfaceId}
       className={`flex flex-col gap-3.5 ${className}`}
     >
-      {showSurfaceBadge && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-1.5 text-[11px] text-emerald-900">
-          <span className="font-semibold">{surface.surfaceId}</span>
-          <span className="text-[10px] text-stone-500">
-            {componentKeys.length} items
-          </span>
+      {(showSurfaceBadge || isMultiCatalogSurface) && (
+        <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 via-white to-violet-50/70 px-3.5 py-2.5 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
+              <Layers className="h-3.5 w-3.5 text-[#0AAD0A]" />
+              <span>
+                A2UI v1.0 Multi-Catalog Surface ({catalogStats.length} Catalogs
+                Active)
+              </span>
+            </div>
+            <span className="font-mono text-[10px] font-semibold text-stone-500">
+              {componentKeys.length} nodes
+            </span>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {catalogStats.map((stat) => {
+              const label =
+                stat.descriptor?.badgeLabel ??
+                stat.catalogId.replace(/^https?:\/\//, '');
+              const pillColor =
+                stat.descriptor?.domain === 'culinary'
+                  ? 'bg-violet-100/90 text-violet-900 border-violet-300/80'
+                  : stat.descriptor?.domain === 'grocery'
+                    ? 'bg-amber-100/90 text-amber-900 border-amber-300/80'
+                    : 'bg-emerald-100/80 text-emerald-900 border-emerald-300/80';
+              return (
+                <span
+                  key={stat.catalogId}
+                  title={stat.catalogId}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold ${pillColor}`}
+                >
+                  <span>{label}</span>
+                  {stat.isDefault && (
+                    <span className="rounded bg-black/10 px-1 text-[9px] uppercase">
+                      default
+                    </span>
+                  )}
+                  <span className="font-sans font-semibold opacity-80">
+                    · {stat.componentCount} comp
+                    {stat.functions.length > 0
+                      ? ` + ${stat.functions.join(', ')}`
+                      : ''}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
         </div>
       )}
 

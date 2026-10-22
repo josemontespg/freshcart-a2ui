@@ -6,6 +6,103 @@ export const A2UI_BASIC_CATALOG_ID =
 export const FRESHCART_GROCERY_CATALOG_ID =
   'https://freshcart.app/catalogs/grocery/v1/catalog.json' as const;
 
+export const FRESHCART_CULINARY_CATALOG_ID =
+  'https://freshcart.app/catalogs/culinary/v1/catalog.json' as const;
+
+export const SUPPORTED_A2UI_CATALOG_IDS = [
+  A2UI_BASIC_CATALOG_ID,
+  FRESHCART_GROCERY_CATALOG_ID,
+  FRESHCART_CULINARY_CATALOG_ID,
+] as const;
+
+export type SupportedA2UICatalogId = (typeof SUPPORTED_A2UI_CATALOG_IDS)[number];
+
+export interface A2UICatalogDescriptor {
+  id: string;
+  shortName: string;
+  badgeLabel: string;
+  domain: 'basic' | 'grocery' | 'culinary' | 'custom';
+  description: string;
+  components: string[];
+  functions: string[];
+}
+
+export const A2UI_CATALOG_REGISTRY: Record<string, A2UICatalogDescriptor> = {
+  [A2UI_BASIC_CATALOG_ID]: {
+    id: A2UI_BASIC_CATALOG_ID,
+    shortName: 'Basic v1.0',
+    badgeLabel: 'basic/v1.0',
+    domain: 'basic',
+    description:
+      'Standard A2UI v1.0 layout, typography, form controls, and formatting/validation functions',
+    components: [
+      'Column',
+      'Row',
+      'Card',
+      'Tabs',
+      'List',
+      'Modal',
+      'Divider',
+      'Text',
+      'Image',
+      'Icon',
+      'Button',
+      'Slider',
+      'CheckBox',
+      'ChoicePicker',
+      'TextField',
+      'DateTimeInput',
+    ],
+    functions: [
+      'formatString',
+      'formatNumber',
+      'formatCurrency',
+      'formatDate',
+      'pluralize',
+      'required',
+      'numeric',
+      'regex',
+      'length',
+      'email',
+      'and',
+      'or',
+      'not',
+      'contains',
+      'equals',
+      'openUrl',
+    ],
+  },
+  [FRESHCART_GROCERY_CATALOG_ID]: {
+    id: FRESHCART_GROCERY_CATALOG_ID,
+    shortName: 'Grocery Merchandising v1',
+    badgeLabel: 'grocery/v1',
+    domain: 'grocery',
+    description:
+      'FreshCart store merchandising, flash deal coupons, smart product swaps, and aisle navigation widgets',
+    components: [
+      'ProductDealCard',
+      'AisleMapLocator',
+      'FlashCouponBanner',
+      'NutritionSummary',
+    ],
+    functions: ['formatSavingsBadge'],
+  },
+  [FRESHCART_CULINARY_CATALOG_ID]: {
+    id: FRESHCART_CULINARY_CATALOG_ID,
+    shortName: 'Culinary & Sommelier v1',
+    badgeLabel: 'culinary/v1',
+    domain: 'culinary',
+    description:
+      'FreshCart chef prep timelines, sommelier & fromager pairing cards, macro breakdown, and culinary @call functions',
+    components: [
+      'NutritionSummary',
+      'RecipeStepTimeline',
+      'WineAndCheesePairingCard',
+    ],
+    functions: ['calculatePerServingCost', 'matchDietaryScore'],
+  },
+};
+
 /**
  * A2UI v1.0 DataBinding uses the reserved `@path` key pointing to a
  * JSON Pointer (RFC 6901) path in the surface DataModel (or relative path
@@ -103,11 +200,21 @@ export type A2UIBasicComponentType =
   | 'Slider'
   | 'DateTimeInput';
 
-export type A2UIGroceryComponentType = 'ProductDealCard' | 'NutritionSummary';
+export type A2UIGroceryComponentType =
+  | 'ProductDealCard'
+  | 'AisleMapLocator'
+  | 'FlashCouponBanner'
+  | 'NutritionSummary';
+
+export type A2UICulinaryComponentType =
+  | 'NutritionSummary'
+  | 'RecipeStepTimeline'
+  | 'WineAndCheesePairingCard';
 
 export type A2UIComponentType =
   | A2UIBasicComponentType
-  | A2UIGroceryComponentType;
+  | A2UIGroceryComponentType
+  | A2UICulinaryComponentType;
 
 export interface A2UIComponentBase {
   id: string;

@@ -394,6 +394,7 @@ function geminiA2UIMiddlewarePlugin(): Plugin {
             'meal-planner': 'meal-planner-surface',
             'cart-optimizer': 'cart-optimizer-surface',
             'budget-builder': 'budget-nutrition-surface',
+            'mixed-catalogs': 'mixed_catalogs_surface',
             custom: 'gemini-live-surface',
           };
           const requestedSurfaceId =
@@ -507,13 +508,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), geminiA2UIMiddlewarePlugin()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5189,
     strictPort: true,
     allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5189,
     allowedHosts: true,
   },
 });

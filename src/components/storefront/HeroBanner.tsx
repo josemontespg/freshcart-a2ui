@@ -13,10 +13,18 @@ import type { DietaryTag, Store } from '../../types/grocery';
 export interface HeroBannerProps {
   store: Store;
   onLaunchAIScenario?: (
-    scenarioId: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
+    scenarioId:
+      | 'meal-planner'
+      | 'cart-optimizer'
+      | 'budget-builder'
+      | 'mixed-catalogs'
   ) => void;
   onOpenAIShopper?: (
-    scenarioId?: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
+    scenarioId?:
+      | 'meal-planner'
+      | 'cart-optimizer'
+      | 'budget-builder'
+      | 'mixed-catalogs'
   ) => void;
   onQuickFilterTag?: (tag: DietaryTag) => void;
 }
@@ -31,7 +39,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     store.featuredPromoBanner.linkedScenarioId ?? 'meal-planner';
 
   const handleTriggerScenario = (
-    targetScenario: 'meal-planner' | 'cart-optimizer' | 'budget-builder'
+    targetScenario:
+      | 'meal-planner'
+      | 'cart-optimizer'
+      | 'budget-builder'
+      | 'mixed-catalogs'
   ) => {
     if (onLaunchAIScenario) {
       onLaunchAIScenario(targetScenario);
